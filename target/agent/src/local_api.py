@@ -224,3 +224,7 @@ def start_service(host: str = "127.0.0.1", port: int = 8787) -> None:
     # Werkzeug is fine for an internal 127.0.0.1 service; production should
     # consider gunicorn or uwsgi behind a reverse proxy.
     app.run(host=host, port=port, debug=False, use_reloader=False)
+
+
+if __name__ == "__main__":
+    start_service()
