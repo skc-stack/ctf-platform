@@ -41,7 +41,10 @@ cp "$AGENT_SRC_DIR/requirements.txt" "$OPT_DIR/requirements.txt"
 chmod -R a+rX "$OPT_DIR"
 
 # 3. Python deps in a venv
-install -d "$OPT_DIR/venv"
+# Remove existing venv to ensure clean install
+if [[ -d "$OPT_DIR/venv" ]]; then
+    rm -rf "$OPT_DIR/venv"
+fi
 python3 -m venv "$OPT_DIR/venv"
 "$OPT_DIR/venv/bin/pip" install --upgrade pip -q
 "$OPT_DIR/venv/bin/pip" install -r "$OPT_DIR/requirements.txt" -q
