@@ -30,21 +30,23 @@ if [[ "$EUID" -ne 0 ]]; then
   exit 1
 fi
 
-# 設定預設值
-CTF_DOMAIN="${CTF_DOMAIN:-ctf.example.edu.tw}"
-CTF_USE_HTTPS="${CTF_USE_HTTPS:-false}"
+# 設定預設值（已針對高中資安演練平台調整）
+CTF_DOMAIN="${CTF_DOMAIN:-ctf.kghs.kh.edu.tw}"
+CTF_USE_HTTPS="${CTF_USE_HTTPS:-true}"
 CTF_USER="${SUDO_USER:-www-data}"
 CTF_GROUP="www-data"
-WEB_ROOT="/var/www/ctf-server"
+WEB_ROOT="/var/www/html/ctf.kghs.kh.edu.tw"
 STORAGE_ROOT="/var/lib/ctf-server"
 LOG_ROOT="/var/log/ctf-server"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 echo "============================================"
 echo "  CTF Server 安裝（Nginx 版本）"
+echo "  高中資安攻防演練平台"
 echo "============================================"
 echo "  網域: $CTF_DOMAIN"
-echo "  HTTPS: $CTF_USE_HTTPS"
+echo "  HTTPS: $CTF_USE_HTTPS (Let's Encrypt)"
+echo "  Web Root: $WEB_ROOT"
 echo "  使用者: $CTF_USER"
 echo "============================================"
 echo ""
@@ -102,6 +104,7 @@ fi
 # --------------------------------------------------
 echo "[3/10] 建立目錄結構"
 mkdir -p "$WEB_ROOT" "$STORAGE_ROOT"/{challenges,keys} "$LOG_ROOT"/{nginx,php-fpm}
+mkdir -p /etc/letsencrypt/live/$CTF_DOMAIN
 chown -R "$CTF_USER:$CTF_GROUP" "$WEB_ROOT" "$STORAGE_ROOT" "$LOG_ROOT"
 chmod 750 "$STORAGE_ROOT/keys"
 
@@ -226,33 +229,37 @@ fi
 echo "  .env 已寫入"
 
 # --------------------------------------------------
-# [7/10] 設定 Nginx vhost
+# [7/10] 設定 Nginx vhost（針對 Let's Encrypt）
 # --------------------------------------------------
 echo "[7/10] 設定 Nginx vhost"
 
 # 複製設定檔
 cp "$SCRIPT_DIR/../nginx/ctf-server.conf" /etc/nginx/sites-available/ctf-server
 
-# 修改設定檔中的域名
-sed -i "s/ctf\.example\.edu\.tw/$CTF_DOMAIN/g" /etc/nginx/sites-available/ctf-server
+# 修改設定檔
+sed -i "s|ctf\.example\.edu\.tw|$CTF_DOMAIN|g" /etc/nginx/sites-available/ctf-server
+sed -i "s|/var/www/ctf-server/ctf-server/public|$WEB_ROOT/public|g" /etc/nginx/sites-available/ctf-server
 
-# 根據 HTTPS 設定啟用/停用 SSL 相關設定
-if [[ "$CTF_USE_HTTPS" == "true" ]]; then
-    sed -i 's/# listen 443 ssl;/listen 443 ssl;/' /etc/nginx/sites-available/ctf-server
-    sed -i 's/# ssl_certificate     /ssl_certificate     /' /etc/nginx/sites-available/ctf-server
-    sed -i 's/# ssl_certificate_key /ssl_certificate_key /' /etc/nginx/sites-available/ctf-server
-    sed -i 's/# ssl_protocols       /ssl_protocols       /' /etc/nginx/sites-available/ctf-server
-    sed -i 's/# ssl_ciphers         /ssl_ciphers         /' /etc/nginx/sites-available/ctf-server
-    # 啟用 HTTP to HTTPS 重導向
-    sed -i 's/# server {/server {/' /etc/nginx/sites-available/ctf-server
-    sed -i 's/#     listen 80;/    listen 80;/' /etc/nginx/sites-available/ctf-server
-    sed -i 's/#     server_name/    server_name/' /etc/nginx/sites-available/ctf-server
-    sed -i 's/#     return 301/    return 301/' /etc/nginx/sites-available/ctf-server
-    sed -i 's/# }/}/' /etc/nginx/sites-available/ctf-server
-else
-    # 移除預設 site
-    rm -f /etc/nginx/sites-enabled/default
-fi
+# 針對 Let's Encrypt 設定 SSL 路徑
+SSL_CERT="/etc/letsencrypt/live/$CTF_DOMAIN/fullchain.pem"
+SSL_KEY="/etc/letsencrypt/live/$CTF_DOMAIN/privkey.pem"
+
+# 啟用 SSL 設定
+sed -i "s|# listen 443 ssl;|listen 443 ssl http2;|" /etc/nginx/sites-available/ctf-server
+sed -i "s|# ssl_certificate     /etc/ssl/certs/ctf.lab.crt;|ssl_certificate     $SSL_CERT;|" /etc/nginx/sites-available/ctf-server
+sed -i "s|# ssl_certificate_key /etc/ssl/private/ctf.lab.key;|ssl_certificate_key $SSL_KEY;|" /etc/nginx/sites-available/ctf-server
+sed -i "s|# ssl_protocols       TLSv1.2 TLSv1.3;|ssl_protocols       TLSv1.2 TLSv1.3;|" /etc/nginx/sites-available/ctf-server
+sed -i "s|# ssl_ciphers         HIGH:!aNULL:!MD5;|ssl_ciphers         HIGH:!aNULL:!MD5;|" /etc/nginx/sites-available/ctf-server
+
+# 啟用 HTTP to HTTPS 重導向
+sed -i "s|# server {|server {|" /etc/nginx/sites-available/ctf-server
+sed -i "s|#     listen 80;|    listen 80;|" /etc/nginx/sites-available/ctf-server
+sed -i "s|#     server_name ctf.example.edu.tw;|    server_name $CTF_DOMAIN;|" /etc/nginx/sites-available/ctf-server
+sed -i "s|#     return 301 https://\$server_name\$request_uri;|    return 301 https://\$server_name\$request_uri;|" /etc/nginx/sites-available/ctf-server
+sed -i "s|# }|}|" /etc/nginx/sites-available/ctf-server
+
+# 移除預設 site
+rm -f /etc/nginx/sites-enabled/default
 
 # 啟用 site
 ln -sf /etc/nginx/sites-available/ctf-server /etc/nginx/sites-enabled/
@@ -262,6 +269,7 @@ nginx -t
 systemctl reload nginx
 
 echo "  Nginx vhost 已設定"
+echo "  SSL 憑證路徑: $SSL_CERT"
 
 # --------------------------------------------------
 # [8/10] 設定 PHP-FPM
