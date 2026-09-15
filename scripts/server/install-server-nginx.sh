@@ -30,6 +30,14 @@ if [[ "$EUID" -ne 0 ]]; then
   exit 1
 fi
 
+# 網域格式驗證（防止路徑穿越）
+valid_domain_pattern='^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$'
+if [[ ! "$CTF_DOMAIN" =~ $valid_domain_pattern ]]; then
+  echo "[ERR] CTF_DOMAIN 格式無效: '$CTF_DOMAIN'"
+  echo "  有效格式: 字母、數字、連字號與點，不得包含 /、\\、.. 等路徑字元"
+  exit 1
+fi
+
 # 設定預設值（已針對高中資安演練平台調整）
 CTF_DOMAIN="${CTF_DOMAIN:-ctf.kghs.kh.edu.tw}"
 CTF_USE_HTTPS="${CTF_USE_HTTPS:-true}"
