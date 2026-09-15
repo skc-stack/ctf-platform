@@ -40,7 +40,7 @@ Per student Target VM (one per student):
 - Public DNS: `ctf.lab.example.com` → Server public IP
 - Each Target VM reachable from the student (via SSH or local console)
 
-## Server deployment
+## Server deployment (Apache)
 
 ```bash
 # 1. Install OS packages
@@ -102,6 +102,42 @@ echo "0 3 * * * www-data php /var/www/ctf-server/ctf-server/bin/cleanup.php" \
 # 9. Backups (daily)
 echo "0 2 * * * /usr/bin/mysqldump ctf_server > /var/backups/ctf_server-\$(date +\%F).sql" \
     | sudo tee /etc/cron.d/ctf-server-backup
+```
+
+## Server deployment (Nginx)
+
+For servers running Nginx instead of Apache, use the automated installation script:
+
+```bash
+# 1. Clone the repository
+sudo mkdir -p /var/www
+cd /var/www
+sudo git clone https://github.com/your-org/ctf-platform.git ctf-server
+cd ctf-server
+
+# 2. Run the Nginx installation script
+sudo ./scripts/server/install-server-nginx.sh
+
+# Or with custom domain and HTTPS:
+CTF_DOMAIN=ctf.example.edu.tw CTF_USE_HTTPS=true sudo ./scripts/server/install-server-nginx.sh
+```
+
+The script will:
+- Install Nginx, PHP 8.3 FPM, MariaDB, and Composer
+- Create the database and user
+- Deploy the application
+- Generate `.env` with random secrets
+- Configure Nginx virtual host
+- Set up cron jobs for cleanup
+
+After installation, create the first admin:
+```bash
+sudo -u www-data php /var/www/ctf-server/ctf-server/bin/create-admin.php
+```
+
+If using HTTPS with Let's Encrypt:
+```bash
+sudo certbot --nginx -d ctf.example.edu.tw
 ```
 
 ## Target VM deployment (one per student)
