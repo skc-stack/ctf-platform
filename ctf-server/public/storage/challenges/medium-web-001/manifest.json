@@ -1,0 +1,22 @@
+{
+    "schema_version": 1,
+    "challenge_id": "medium-web-001",
+    "version": 3,
+    "type": "web",
+    "difficulty": "medium",
+    "title": "My Web Challenge",
+    "description": "demo",
+    "points": 150,
+    "entrypoint": "\/challenge\/medium-web-001\/",
+    "verification": {
+        "type": "flag",
+        "flag_static": ""
+    },
+    "database": null,
+    "reset": {
+        "drop_and_recreate_db": false,
+        "restore_files": [
+            "web\/"
+        ]
+    }
+}

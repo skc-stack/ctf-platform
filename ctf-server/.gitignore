@@ -1,0 +1,13 @@
+.env
+.env.local
+vendor/
+storage/logs/*.log
+storage/tmp/*
+!storage/tmp/.gitkeep
+storage/challenges/*
+!storage/challenges/.gitkeep
+*.cache
+.phpunit.result.cache
+.phpunit.cache/
+.idea/
+.vscode/

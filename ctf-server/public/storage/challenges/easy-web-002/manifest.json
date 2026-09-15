@@ -1,0 +1,22 @@
+{
+    "schema_version": 1,
+    "challenge_id": "easy-web-002",
+    "version": 2,
+    "type": "web",
+    "difficulty": "easy",
+    "title": "crsf",
+    "description": "crsf",
+    "points": 100,
+    "entrypoint": "\/challenge\/easy-web-002\/",
+    "verification": {
+        "type": "flag",
+        "flag_static": ""
+    },
+    "database": null,
+    "reset": {
+        "drop_and_recreate_db": false,
+        "restore_files": [
+            "web\/"
+        ]
+    }
+}

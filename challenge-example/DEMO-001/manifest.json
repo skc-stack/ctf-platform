@@ -1,0 +1,23 @@
+{
+    "schema_version": 1,
+    "challenge_id": "DEMO-001",
+    "version": 1,
+    "type": "web",
+    "difficulty": "easy",
+    "title": "Demo: Hidden in HTML Comments",
+    "description": "Classic intro challenge — the flag is hidden in an HTML comment on the main page. Read the source.",
+    "points": 200,
+    "entrypoint": "/challenge/DEMO-001/",
+    "verification": {
+        "type": "flag",
+        "flag_static": "flag{read_the_source}"
+    },
+    "database": {
+        "name": "ctf_demo_001",
+        "setup_sql": "setup.sql"
+    },
+    "reset": {
+        "drop_and_recreate_db": true,
+        "restore_files": ["web/"]
+    }
+}

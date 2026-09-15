@@ -1,0 +1,19 @@
+{
+    "schema_version": 1,
+    "challenge_id": "{{SLUG}}",
+    "version": 1,
+    "type": "web",
+    "difficulty": "easy",
+    "title": "Reflective XSS Demo",
+    "description": "在搜尋框注入 JavaScript 觸發 XSS，讀取頁面上的隱藏 flag。",
+    "points": 100,
+    "entrypoint": "/challenge/{{SLUG}}/",
+    "verification": {
+        "type": "flag",
+        "flag_static": "flag{xss_demo_reflective_v1}"
+    },
+    "reset": {
+        "drop_and_recreate_db": false,
+        "restore_files": ["web/"]
+    }
+}

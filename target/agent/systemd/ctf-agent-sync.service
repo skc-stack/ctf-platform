@@ -1,0 +1,11 @@
+[Unit]
+Description=CTF Target Agent sync (one-shot)
+After=network.target mariadb.service
+
+[Service]
+Type=oneshot
+User=root
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/usr/local/bin/ctf-agent sync
+StandardOutput=journal
+StandardError=journal

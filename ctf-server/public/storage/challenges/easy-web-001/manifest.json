@@ -1,0 +1,22 @@
+{
+    "schema_version": 1,
+    "challenge_id": "easy-web-001",
+    "version": 2,
+    "type": "web",
+    "difficulty": "easy",
+    "title": "XSS",
+    "description": "XSS",
+    "points": 100,
+    "entrypoint": "\/challenge\/easy-web-001\/",
+    "verification": {
+        "type": "flag",
+        "flag_static": ""
+    },
+    "database": null,
+    "reset": {
+        "drop_and_recreate_db": false,
+        "restore_files": [
+            "web\/"
+        ]
+    }
+}

@@ -1,0 +1,13 @@
+[Unit]
+Description=CTF Target Agent sync timer
+Requires=ctf-agent.service
+
+[Timer]
+# Run sync 30 seconds after boot, then every 5 minutes.
+OnBootSec=30
+OnUnitActiveSec=5min
+AccuracySec=10s
+Unit=ctf-agent.service
+
+[Install]
+WantedBy=timers.target

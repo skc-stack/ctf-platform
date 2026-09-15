@@ -1,0 +1,3 @@
+@echo off
+echo Starting MariaDB (foreground, Ctrl+C to stop)...
+"C:\Users\ai\MariaDB12\bin\mariadbd.exe" --defaults-file="C:\Users\ai\MariaDB12\my.ini" --console

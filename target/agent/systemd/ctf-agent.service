@@ -1,0 +1,30 @@
+[Unit]
+Description=CTF Target Agent (local Flask API for Target Portal)
+After=network.target mariadb.service
+Wants=mariadb.service
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/opt/ctf-agent
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/usr/local/bin/ctf-agent-serve
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+# Hardening: agent needs root to install/reset DBs. Limit what it can do.
+NoNewPrivileges=false
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/ctf-agent /srv/ctf/challenges /var/log/ctf-agent /etc/ctf-agent
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+
+[Install]
+WantedBy=multi-user.target

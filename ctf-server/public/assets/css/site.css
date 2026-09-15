@@ -1,0 +1,915 @@
+/* ==========================================================================
+   CTF LAB — Drafting-Table / Blueprint Aesthetic
+   ==========================================================================
+   Design language: engineering blueprint, not hacker movie.
+   - Sharp corners (radius 0)
+   - Hairline rules, no shadows
+   - Corner registration marks on boxed content
+   - Mono as display, serif as body, mono as data
+   - Right-aligned metadata blocks top/bottom (drawing title block)
+   ========================================================================== */
+
+:root {
+    /* Palette */
+    --ink:           #0E1A2E;   /* primary background (deep navy ink, not pure black) */
+    --ink-deep:      #081424;   /* deeper variant for layers */
+    --grid:          #1E3556;   /* blueprint grid line */
+    --grid-faint:    #14284A;   /* fainter grid for inner divisions */
+    --paper:         #E8E4D6;   /* primary text — warm off-white, like ink on drafting paper */
+    --paper-dim:     #9DA8B8;   /* secondary text */
+    --paper-mute:    #6B7787;   /* tertiary / metadata */
+    --drafting-red:  #D8553A;   /* warnings, FLAG callouts, accents */
+    --drafting-green:#6FAF7E;   /* success, solved */
+    --brass:         #C9A961;   /* score / numeric values (like brass instrument markings) */
+
+    /* Type */
+    --font-display: 'IBM Plex Mono', ui-monospace, monospace;
+    --font-body:    'IBM Plex Serif', Georgia, serif;
+    --font-mono:    'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace;
+
+    /* Geometry */
+    --hairline:    1px solid var(--grid);
+    --rule-paper:  1px solid var(--paper);
+    --rule-strong: 2px solid var(--paper);
+}
+
+/* === Reset === */
+* { box-sizing: border-box; }
+
+html, body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--ink);
+    color: var(--paper);
+    font-family: var(--font-body);
+    font-size: 20px;
+    line-height: 1.6;
+    min-height: 100vh;
+}
+
+body {
+    background-image:
+        linear-gradient(rgba(30,53,86,.55) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(30,53,86,.55) 1px, transparent 1px),
+        linear-gradient(rgba(30,53,86,.25) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(30,53,86,.25) 1px, transparent 1px);
+    background-size: 128px 128px, 128px 128px, 32px 32px, 32px 32px;
+    background-position: -1px -1px, -1px -1px, -1px -1px, -1px -1px;
+}
+
+a { color: var(--paper); text-decoration: none; border-bottom: 1px dashed transparent; }
+a:hover { color: var(--brass); border-bottom-color: var(--brass); }
+
+/* ==========================================================================
+   Nav
+   ========================================================================== */
+.ctf-nav {
+    border-bottom: 1px solid var(--paper);
+    background: var(--ink-deep);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+.ctf-nav-inner {
+    padding: 14px 48px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 32px;
+}
+.ctf-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 700;
+    color: var(--paper);
+    font-family: var(--font-display);
+    font-size: 20px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+.ctf-brand-mark {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    border: 1px solid var(--brass);
+    position: relative;
+}
+.ctf-brand-mark::before {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    border: 1px solid var(--brass);
+}
+.ctf-brand-text { font-weight: 700; }
+.ctf-nav-links {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    font-family: var(--font-display);
+    font-size: 18px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+.ctf-nav-links a {
+    color: var(--paper-dim);
+    padding: 6px 0;
+    border-bottom: 1px solid transparent;
+}
+/* .ctf-btn inside nav-links should keep all 4 borders from .ctf-btn — the
+   rule above has higher specificity (.ctf-nav-links a vs .ctf-btn) and
+   would otherwise zero out the bottom border. */
+.ctf-nav-links a.ctf-btn { border-bottom: 1px solid var(--paper); }
+.ctf-nav-links a.ctf-btn:hover { background: var(--paper); color: var(--ink); border-bottom-color: var(--paper); }
+.ctf-nav-links a:not(.ctf-btn):hover { color: var(--paper); border-bottom-color: var(--brass); }
+.ctf-nav-links a.is-active { color: var(--brass); border-bottom-color: var(--brass); }
+.ctf-nav-links a:not(.ctf-btn)::before {
+    content: '/';
+    color: var(--paper-mute);
+    margin-right: 0.4em;
+}
+.ctf-nav-user {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--paper-dim);
+    font-family: var(--font-mono);
+    font-size: 18px;
+    text-transform: none;
+    letter-spacing: 0;
+}
+.ctf-nav-user-name { color: var(--paper); }
+.ctf-nav-user-role {
+    color: var(--brass);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-family: var(--font-display);
+    font-size: 17px;
+    padding: 2px 6px;
+    border: 1px solid var(--brass);
+}
+.ctf-nav-logout { display: inline; margin: 0; }
+.ctf-nav-logout button { cursor: pointer; }
+
+/* ==========================================================================
+   Main
+   ========================================================================== */
+.ctf-main {
+    padding: 40px 48px 32px;
+}
+
+/* ==========================================================================
+   Metadata blocks (top-right + bottom-right title block)
+   ========================================================================== */
+.ctf-meta-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    font-family: var(--font-display);
+    font-size: 17px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--paper-mute);
+    border-bottom: var(--rule-paper);
+    padding-bottom: 10px;
+    margin-bottom: 28px;
+}
+.ctf-meta-top > div:first-child {
+    color: var(--brass);
+}
+.ctf-meta-top-right { text-align: right; line-height: 1.6; }
+
+.ctf-title-block {
+    border-top: var(--rule-paper);
+    padding: 18px 0 8px;
+    margin-top: 48px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 32px;
+    font-family: var(--font-display);
+    font-size: 17px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--paper-mute);
+}
+.ctf-title-block > div { line-height: 1.7; }
+.ctf-title-block strong {
+    color: var(--paper);
+    font-weight: 500;
+}
+
+/* ==========================================================================
+   Hero
+   ========================================================================== */
+.ctf-hero { padding: 20px 0 40px; }
+.ctf-hero-grid {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 56px;
+    align-items: start;
+}
+.ctf-eyebrow {
+    font-family: var(--font-display);
+    font-size: 18px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--brass);
+    margin: 0 0 18px;
+}
+.ctf-hero-title {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 60px;
+    line-height: 1.2;
+    letter-spacing: 0.02em;
+    margin: 0 0 6px;
+    color: var(--paper);
+}
+.ctf-hero-title-rule {
+    height: 0;
+    border-top: 2px solid var(--paper);
+    margin: 0 0 28px;
+    width: 80%;
+}
+.ctf-hero-lead {
+    font-family: var(--font-body);
+    font-size: 22px;
+    line-height: 1.7;
+    margin: 0 0 24px;
+    max-width: 560px;
+    color: var(--paper);
+}
+.ctf-hero-annotation {
+    font-family: var(--font-mono);
+    font-size: 18px;
+    color: var(--paper-mute);
+    border-left: 1px solid var(--paper-mute);
+    padding-left: 12px;
+    margin: 0 0 24px;
+    max-width: 560px;
+}
+.ctf-hero-actions { display: flex; gap: 16px; flex-wrap: wrap; }
+
+/* ==========================================================================
+   Buttons (bracketed, drawing-style)
+   ========================================================================== */
+
+/* Inline form wrappers around <button>s need to align with sibling <a>s.
+   Hidden CSRF inputs would otherwise add line-height and push the button
+   baseline down. Zero the form's line-height and hide the hidden inputs. */
+.ctf-dash-action-form {
+    display: inline-flex;
+    align-items: center;
+    margin: 0;
+    padding: 0;
+    line-height: 0;
+    vertical-align: middle;
+}
+.ctf-dash-action-form input[type="hidden"] {
+    display: none;
+}
+
+.ctf-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 20px;
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 500;
+    line-height: 1.2;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border: 1px solid var(--paper);
+    background: transparent;
+    color: var(--paper);
+    cursor: pointer;
+    transition: all 0.15s;
+    text-decoration: none;
+    /* Normalize <a> vs <button> rendering across browsers */
+    appearance: none;
+    -webkit-appearance: none;
+    box-sizing: border-box;
+    vertical-align: middle;
+}
+.ctf-btn:hover { background: var(--paper); color: var(--ink); }
+.ctf-btn-primary {
+    border-color: var(--brass);
+    color: var(--brass);
+}
+.ctf-btn-primary:hover { background: var(--brass); color: var(--ink); }
+.ctf-btn-ghost {}
+.ctf-btn-sm { padding: 6px 12px; font-size: 17px; }
+.ctf-btn-danger {
+    border-color: var(--drafting-red);
+    color: var(--drafting-red);
+}
+.ctf-btn-danger:hover { background: var(--drafting-red); color: var(--ink); }
+
+/* ==========================================================================
+   Terminal card (kept for ctf-server status example, more refined now)
+   ========================================================================== */
+.ctf-terminal {
+    border: 1px solid var(--paper);
+    background: var(--ink-deep);
+    position: relative;
+}
+.ctf-terminal::before, .ctf-terminal::after {
+    content: '';
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--brass);
+}
+.ctf-terminal::before { top: -1px; left: -1px; border-right: none; border-bottom: none; }
+.ctf-terminal::after { bottom: -1px; right: -1px; border-left: none; border-top: none; }
+.ctf-terminal-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    border-bottom: 1px dashed var(--grid);
+    font-family: var(--font-display);
+    font-size: 17px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--paper-mute);
+}
+.ctf-terminal-bar > .ctf-terminal-title {
+    margin-left: 6px;
+}
+.ctf-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 0;
+    transform: rotate(45deg);
+}
+.ctf-dot-red { background: var(--drafting-red); }
+.ctf-dot-amber { background: var(--brass); }
+.ctf-dot-green { background: var(--drafting-green); }
+.ctf-terminal-body {
+    margin: 0;
+    padding: 18px 22px;
+    font-family: var(--font-mono);
+    font-size: 18px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    color: var(--paper);
+}
+.ctf-prompt { color: var(--brass); }
+.ctf-ok { color: var(--drafting-green); }
+.ctf-str { color: var(--drafting-red); }
+.ctf-num { color: var(--brass); }
+
+/* ==========================================================================
+   Numbered sections (replace cards)
+   ========================================================================== */
+.ctf-sections {
+    border-top: var(--rule-paper);
+    padding-top: 32px;
+    margin-top: 24px;
+}
+.ctf-section {
+    display: grid;
+    grid-template-columns: 80px 1fr 1.2fr;
+    gap: 24px;
+    padding: 22px 0;
+    border-bottom: 1px dashed var(--grid);
+}
+.ctf-section:last-child { border-bottom: none; }
+.ctf-section-num {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 28px;
+    color: var(--brass);
+    letter-spacing: 0.06em;
+}
+.ctf-section-title {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 21px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--paper);
+}
+.ctf-section-desc {
+    font-family: var(--font-body);
+    font-size: 21px;
+    line-height: 1.6;
+    color: var(--paper-dim);
+}
+
+/* ==========================================================================
+   Auth card (blueprint drawing card)
+   ========================================================================== */
+.ctf-auth { padding: 32px 0; }
+.ctf-auth-card {
+    max-width: 600px;
+    margin: 0 auto;
+    border: 1px solid var(--paper);
+    background: var(--ink-deep);
+    position: relative;
+    padding: 36px;
+}
+.ctf-auth-card::before, .ctf-auth-card::after {
+    content: '';
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--brass);
+}
+.ctf-auth-card::before { top: -1px; left: -1px; border-right: none; border-bottom: none; }
+.ctf-auth-card::after { bottom: -1px; right: -1px; border-left: none; border-top: none; }
+.ctf-auth-title {
+    margin: 0 0 8px;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 32px;
+    letter-spacing: 0.04em;
+    color: var(--paper);
+    text-transform: uppercase;
+}
+.ctf-auth-rule {
+    border-top: 2px solid var(--paper);
+    margin: 0 0 24px;
+    width: 50%;
+}
+.ctf-auth-lead {
+    margin: 0 0 24px;
+    font-family: var(--font-body);
+    color: var(--paper-dim);
+    font-size: 21px;
+}
+.ctf-auth-notice {
+    border: 1px dashed var(--brass);
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    color: var(--paper-dim);
+    font-size: 18px;
+    font-family: var(--font-mono);
+}
+.ctf-auth-notice code {
+    color: var(--brass);
+    font-family: var(--font-mono);
+}
+.ctf-auth-notice-warn {
+    border-color: var(--drafting-red);
+    color: var(--drafting-red);
+}
+.ctf-auth-notice-warn code { color: var(--drafting-red); }
+
+/* ==========================================================================
+   Form (blueprint input)
+   ========================================================================== */
+.ctf-form { display: flex; flex-direction: column; gap: 18px; }
+.ctf-field { display: flex; flex-direction: column; gap: 6px; flex: 1; }
+.ctf-field-label {
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--paper-dim);
+}
+.ctf-field-label .bi { color: var(--brass); }
+.ctf-field input,
+.ctf-field select,
+.ctf-field textarea {
+    background: var(--ink);
+    color: var(--paper);
+    border: 0;
+    border-bottom: 1px solid var(--paper-dim);
+    padding: 10px 4px;
+    font-size: 21px;
+    font-family: var(--font-body);
+    transition: border-color 0.15s;
+    border-radius: 0;
+}
+.ctf-field input:focus,
+.ctf-field select:focus,
+.ctf-field textarea:focus {
+    outline: none;
+    border-bottom-color: var(--brass);
+}
+.ctf-field-hint {
+    color: var(--paper-mute);
+    font-size: 17px;
+    font-family: var(--font-mono);
+    letter-spacing: 0.04em;
+}
+.ctf-field-row { display: flex; gap: 18px; }
+.ctf-form-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+
+/* === Captcha row (login form) === */
+.ctf-captcha-row {
+    display: flex;
+    align-items: stretch;
+    gap: 14px;
+}
+.ctf-captcha-img-wrap {
+    position: relative;
+    flex-shrink: 0;
+    align-self: stretch;
+    height: 44px;            /* matches .ctf-captcha-img height */
+}
+.ctf-captcha-img {
+    border: 1px solid var(--paper);
+    background: var(--paper);
+    display: block;
+    height: 44px;
+    width: 180px;
+}
+.ctf-captcha-refresh {
+    /* Match the captcha image height exactly so they line up. */
+    position: absolute;
+    top: 0;
+    right: -16px;
+    height: 44px;
+    width: 44px;
+    padding: 0;
+    background: var(--ink-deep);
+    color: var(--brass);
+    border: 1px solid var(--brass);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+.ctf-captcha-refresh:hover {
+    background: var(--brass);
+    color: var(--ink);
+}
+.ctf-captcha-refresh:focus {
+    outline: none;
+    border-color: var(--brass);
+    box-shadow: 0 0 0 2px rgba(201, 169, 97, 0.35);
+}
+.ctf-captcha-row input {
+    flex: 1;
+    min-height: 38px;
+    border-bottom: 1px solid var(--paper-dim);
+    background: var(--ink);
+    color: var(--paper);
+    font-family: var(--font-display);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    text-align: center;
+    font-size: 18px;
+    line-height: 1.2;
+    padding: 6px 8px;
+    box-sizing: border-box;
+}
+.ctf-captcha-row input:focus {
+    border-bottom-color: var(--brass);
+}
+
+/* === Password field with show/hide toggle === */
+.ctf-password-field {
+    position: relative;
+    width: 100%;
+    box-sizing: border-box;
+}
+.ctf-password-field input {
+    width: 100%;
+    padding-right: 38px;       /* space for toggle button */
+    box-sizing: border-box;
+}
+.ctf-password-toggle {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    color: var(--paper-dim);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+    line-height: 1;
+}
+.ctf-password-toggle:hover { color: var(--brass); }
+.ctf-password-toggle:focus { outline: none; color: var(--brass); }
+
+/* === Password strength meter + rule list (registration only) === */
+.ctf-password-meter {
+    margin-top: 10px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--paper-dim);
+}
+.ctf-pw-strength-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+.ctf-pw-strength-label {
+    color: var(--paper-mute);
+    letter-spacing: 0.06em;
+}
+[data-strength="weak"]   .ctf-pw-strength-label { color: var(--drafting-red); }
+[data-strength="medium"] .ctf-pw-strength-label { color: var(--brass); }
+[data-strength="strong"] .ctf-pw-strength-label { color: var(--drafting-green); }
+.ctf-pw-strength {
+    height: 4px;
+    background: rgba(232,228,214,0.08);
+    border: 1px solid var(--grid);
+    margin-bottom: 10px;
+}
+.ctf-pw-bar {
+    display: block;
+    height: 100%;
+    width: 0%;
+    background: var(--drafting-red);
+    transition: width 0.2s, background 0.2s;
+}
+[data-strength="weak"]   .ctf-pw-bar { background: var(--drafting-red);   width: 33%; }
+[data-strength="medium"] .ctf-pw-bar { background: var(--brass);         width: 66%; }
+[data-strength="strong"] .ctf-pw-bar { background: var(--drafting-green); width: 100%; }
+.ctf-pw-rules {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.ctf-pw-rules li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.ctf-pw-rules li::before {
+    content: '✗';
+    color: var(--drafting-red);
+    width: 12px;
+    display: inline-block;
+    text-align: center;
+}
+.ctf-pw-rules li[data-ok="1"]::before {
+    content: '✓';
+    color: var(--drafting-green);
+}
+.ctf-pw-rules li[data-ok="1"] { color: var(--paper); }
+
+.ctf-pw-match {
+    margin-top: 10px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    min-height: 18px;
+    color: var(--paper-mute);
+}
+.ctf-pw-match[data-match="ok"]   { color: var(--drafting-green); }
+.ctf-pw-match[data-match="fail"] { color: var(--drafting-red); }
+
+input:disabled, button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+form[data-locked="true"] {
+    pointer-events: none;
+}
+
+/* ==========================================================================
+   Role tabs (registration)
+   ========================================================================== */
+.ctf-role-tabs {
+    display: flex;
+    border: 1px solid var(--paper-dim);
+    margin-bottom: 24px;
+}
+.ctf-role-tab {
+    flex: 1;
+    padding: 12px 16px;
+    text-align: center;
+    background: transparent;
+    color: var(--paper-dim);
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-decoration: none;
+    border-right: 1px solid var(--paper-dim);
+    transition: all 0.15s;
+}
+.ctf-role-tab:last-child { border-right: none; }
+.ctf-role-tab:hover { color: var(--paper); background: rgba(232,228,214,0.05); }
+.ctf-role-tab.is-active {
+    color: var(--brass);
+    background: rgba(201,169,97,0.08);
+    box-shadow: inset 0 -2px 0 var(--brass);
+}
+.ctf-role-tab-mark { color: var(--brass); margin-right: 6px; }
+.ctf-role-tab .bi { color: inherit; }
+
+/* ==========================================================================
+   Flash
+   ========================================================================== */
+.ctf-flash {
+    margin: 16px 48px 0;
+    padding: 12px 18px;
+    border: 1px solid var(--drafting-green);
+    color: var(--drafting-green);
+    font-family: var(--font-mono);
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.ctf-flash-success { border-color: var(--drafting-green); color: var(--drafting-green); }
+.ctf-flash-error { border-color: var(--drafting-red); color: var(--drafting-red); }
+
+/* ==========================================================================
+   Dashboard
+   ========================================================================== */
+.ctf-dash { padding: 12px 0 32px; }
+.ctf-dash-title {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 38px;
+    letter-spacing: 0.04em;
+    color: var(--paper);
+    margin: 0 0 4px;
+    text-transform: uppercase;
+}
+.ctf-dash-rule {
+    border-top: 2px solid var(--paper);
+    width: 60%;
+    margin: 0 0 8px;
+}
+.ctf-dash-lead {
+    color: var(--paper-dim);
+    margin: 0 0 28px;
+    font-family: var(--font-body);
+}
+.ctf-dash-sub {
+    margin: 36px 0 14px;
+    font-family: var(--font-display);
+    font-size: 18px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--brass);
+    border-bottom: var(--rule-paper);
+    padding-bottom: 8px;
+}
+.ctf-dash-actions { margin: 16px 0 24px; display: flex; gap: 14px; flex-wrap: wrap; }
+.ctf-dash-meta {
+    color: var(--paper-mute);
+    font-size: 18px;
+    font-family: var(--font-mono);
+    margin-top: 12px;
+}
+.ctf-dash-hint {
+    margin-top: 28px;
+    padding: 14px 16px;
+    border: 1px dashed var(--grid);
+    background: rgba(232,228,214,0.02);
+    color: var(--paper-dim);
+    font-family: var(--font-mono);
+    font-size: 18px;
+}
+
+/* ==========================================================================
+   Stat cards (instrument dial aesthetic)
+   ========================================================================== */
+.ctf-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 0;
+    border: 1px solid var(--paper);
+    margin-bottom: 24px;
+}
+.ctf-stat-card {
+    padding: 22px 24px;
+    border-right: 1px solid var(--grid);
+    position: relative;
+}
+.ctf-stat-card:last-child { border-right: none; }
+.ctf-stat-label {
+    font-family: var(--font-display);
+    font-size: 17px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--paper-dim);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.ctf-stat-label .bi { color: var(--brass); }
+.ctf-stat-value {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 66px;
+    line-height: 1;
+    margin-bottom: 10px;
+    color: var(--brass);
+    letter-spacing: 0.02em;
+}
+.ctf-stat-value-cyan,
+.ctf-stat-cyan { color: var(--paper); }
+.ctf-stat-value-green,
+.ctf-stat-green { color: var(--drafting-green); }
+.ctf-stat-value-purple,
+.ctf-stat-purple { color: var(--drafting-red); }
+.ctf-stat-value-amber,
+.ctf-stat-amber { color: var(--brass); }
+.ctf-stat-meta {
+    color: var(--paper-mute);
+    font-size: 17px;
+    font-family: var(--font-mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+/* ==========================================================================
+   Tables (drawing schedule)
+   ========================================================================== */
+.ctf-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid var(--paper);
+    background: transparent;
+    font-size: 18px;
+}
+.ctf-table th,
+.ctf-table td {
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px dashed var(--grid);
+}
+.ctf-table th {
+    background: rgba(232,228,214,0.04);
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 16px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--paper-dim);
+    border-bottom: 1px solid var(--paper);
+}
+.ctf-table tr:last-child td { border-bottom: none; }
+.ctf-table tr:hover td { background: rgba(232,228,214,0.03); }
+.ctf-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border: 1px solid var(--brass);
+    color: var(--brass);
+    font-family: var(--font-display);
+    font-size: 16px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+.ctf-muted { color: var(--paper-mute); }
+.ctf-mono { font-family: var(--font-mono); font-size: 18px; }
+
+/* ==========================================================================
+   Leaderboard
+   ========================================================================== */
+.ctf-lb-table td:first-child {
+    font-family: var(--font-display);
+    color: var(--brass);
+    font-weight: 700;
+    width: 60px;
+}
+.ctf-lb-table tr:nth-child(1) td:first-child { color: var(--drafting-red); }
+.ctf-lb-table tr:nth-child(2) td:first-child { color: var(--brass); }
+.ctf-lb-table tr:nth-child(3) td:first-child { color: var(--drafting-green); }
+
+/* ==========================================================================
+   Icons
+   ========================================================================== */
+.bi { vertical-align: -0.125em; margin-right: 0.4em; }
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+@media (max-width: 960px) {
+    .ctf-nav-inner { padding: 12px 24px; flex-wrap: wrap; gap: 12px; }
+    .ctf-nav-links { gap: 12px; flex-wrap: wrap; font-size: 17px; }
+    .ctf-main { padding: 24px 24px 16px; }
+    .ctf-hero-grid { grid-template-columns: 1fr; gap: 32px; }
+    .ctf-hero-title { font-size: 42px; }
+    .ctf-section { grid-template-columns: 60px 1fr; }
+    .ctf-section-desc { grid-column: 2; padding-left: 0; margin-top: 8px; }
+    .ctf-meta-top { flex-direction: column; align-items: flex-start; gap: 8px; }
+    .ctf-meta-top-right { text-align: left; }
+    .ctf-title-block { grid-template-columns: 1fr; gap: 12px; }
+    .ctf-stat-card { border-right: none; border-bottom: 1px solid var(--grid); }
+    .ctf-stat-card:last-child { border-bottom: none; }
+    .ctf-flash { margin: 12px 24px 0; }
+    .ctf-field-row { flex-direction: column; }
+}
+@media (max-width: 600px) {
+    .ctf-hero-title { font-size: 32px; }
+    .ctf-stat-value { font-size: 48px; }
+    .ctf-nav-links { gap: 10px; font-size: 16px; }
+    .ctf-nav-user-name { display: none; }
+}
