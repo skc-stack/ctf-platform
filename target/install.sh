@@ -50,12 +50,14 @@ python3 -m venv "$OPT_DIR/venv"
 install -d /usr/local/bin
 cat > /usr/local/bin/ctf-agent <<EOF
 #!/usr/bin/env bash
+cd "$OPT_DIR"
 exec "$OPT_DIR/venv/bin/python" -m src.cli "\$@"
 EOF
 chmod 0755 /usr/local/bin/ctf-agent
 
 cat > /usr/local/bin/ctf-agent-serve <<EOF
 #!/usr/bin/env bash
+cd "$OPT_DIR"
 exec "$OPT_DIR/venv/bin/python" -m src.local_api
 EOF
 chmod 0755 /usr/local/bin/ctf-agent-serve
