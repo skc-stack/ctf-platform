@@ -23,7 +23,7 @@ if [[ "$(id -u)" -ne 0 ]]; then
   exit 1
 fi
 
-AGENT_SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+AGENT_SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/agent" && pwd)"
 OPT_DIR="/opt/ctf-agent"
 ETC_DIR="/etc/ctf-agent"
 LIB_DIR="/var/lib/ctf-agent"
