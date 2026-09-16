@@ -237,7 +237,7 @@ fi
 echo "  .env 已寫入"
 
 # --------------------------------------------------
-# [7/10] 設定 Nginx vhost（分兩階段：先 HTTP，再由 certbot 配置 HTTPS）
+# [7/10] 設定 Nginx vhost（使用現有 SSL 憑證，或預設 HTTP）
 # --------------------------------------------------
 echo "[7/10] 設定 Nginx vhost"
 
@@ -253,13 +253,39 @@ cp "$NGINX_CONF" /etc/nginx/sites-available/ctf-server
 sed -i "s|ctf\.example\.edu\.tw|$CTF_DOMAIN|g" /etc/nginx/sites-available/ctf-server
 sed -i "s|/var/www/ctf-server/ctf-server/public|$WEB_ROOT/public|g" /etc/nginx/sites-available/ctf-server
 
-# 先設定為 HTTP only，讓 certbot 能驗證網域
-# 移除 HTTPS 相關設定，保留 HTTP server 區塊
-sed -i '/listen 443 ssl http2;/d' /etc/nginx/sites-available/ctf-server
-sed -i '/ssl_certificate/d' /etc/nginx/sites-available/ctf-server
-sed -i '/ssl_certificate_key/d' /etc/nginx/sites-available/ctf-server
-sed -i '/ssl_protocols/d' /etc/nginx/sites-available/ctf-server
-sed -i '/ssl_ciphers/d' /etc/nginx/sites-available/ctf-server
+# 檢查 SSL 憑證是否已存在
+SSL_CERT="/etc/letsencrypt/live/$CTF_DOMAIN/fullchain.pem"
+SSL_KEY="/etc/letsencrypt/live/$CTF_DOMAIN/privkey.pem"
+
+if [[ -f "$SSL_CERT" && -f "$SSL_KEY" ]]; then
+    # SSL 憑證已存在，啟用 HTTPS 設定
+    SSL_CERT_ESCAPED=$(printf '%s\n' "$SSL_CERT" | sed 's/[[\.*^$()+?{|/]/\\&/g')
+    SSL_KEY_ESCAPED=$(printf '%s\n' "$SSL_KEY" | sed 's/[[\.*^$()+?{|/]/\\&/g')
+    sed -i "s|# listen 443 ssl;|listen 443 ssl http2;|" /etc/nginx/sites-available/ctf-server
+    sed -i "s|# ssl_certificate     /etc/ssl/certs/ctf.lab.crt;|ssl_certificate     $SSL_CERT_ESCAPED;|" /etc/nginx/sites-available/ctf-server
+    sed -i "s|# ssl_certificate_key /etc/ssl/private/ctf.lab.key;|ssl_certificate_key $SSL_KEY_ESCAPED;|" /etc/nginx/sites-available/ctf-server
+    sed -i "s|# ssl_protocols       TLSv1.2 TLSv1.3;|ssl_protocols       TLSv1.2 TLSv1.3;|" /etc/nginx/sites-available/ctf-server
+    sed -i "s|# ssl_ciphers         HIGH:!aNULL:!MD5;|ssl_ciphers         HIGH:!aNULL:!MD5;|" /etc/nginx/sites-available/ctf-server
+
+    # 啟用 HTTP to HTTPS 重導向
+    sed -i "s|# server {|server {|" /etc/nginx/sites-available/ctf-server
+    sed -i "s|#     listen 80;|    listen 80;|" /etc/nginx/sites-available/ctf-server
+    sed -i "s|#     server_name ctf.example.edu.tw;|    server_name $CTF_DOMAIN;|" /etc/nginx/sites-available/ctf-server
+    sed -i "s|#     return 301 https://\$server_name\$request_uri;|    return 301 https://\$server_name\$request_uri;|" /etc/nginx/sites-available/ctf-server
+    sed -i "s|# }|}|" /etc/nginx/sites-available/ctf-server
+
+    echo "  偵測到現有 SSL 憑證，已啟用 HTTPS 設定"
+else
+    # SSL 憑證不存在，設定為 HTTP only
+    sed -i '/listen 443 ssl http2;/d' /etc/nginx/sites-available/ctf-server
+    sed -i '/ssl_certificate/d' /etc/nginx/sites-available/ctf-server
+    sed -i '/ssl_certificate_key/d' /etc/nginx/sites-available/ctf-server
+    sed -i '/ssl_protocols/d' /etc/nginx/sites-available/ctf-server
+    sed -i '/ssl_ciphers/d' /etc/nginx/sites-available/ctf-server
+
+    echo "  未偵測到 SSL 憑證，設定為 HTTP 模式"
+    echo "  如需啟用 HTTPS，請取得憑證後重新執行本腳本"
+fi
 
 # 啟用 site
 ln -sf /etc/nginx/sites-available/ctf-server /etc/nginx/sites-enabled/
@@ -267,14 +293,11 @@ ln -sf /etc/nginx/sites-available/ctf-server /etc/nginx/sites-enabled/
 # 移除預設 site
 rm -f /etc/nginx/sites-enabled/default
 
-# 測試 Nginx 設定（僅 HTTP）
+# 測試 Nginx 設定
 nginx -t
 systemctl reload nginx
 
-echo "  Nginx vhost 已設定（HTTP 模式）"
-echo "  下一步：請執行 certbot 申請 SSL 憑證："
-echo "    sudo certbot --nginx -d $CTF_DOMAIN"
-echo "  certbot 會自動修改 Nginx 設定加入 SSL"
+echo "  Nginx vhost 已設定"
 
 # --------------------------------------------------
 # [8/10] 設定 PHP-FPM
