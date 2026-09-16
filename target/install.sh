@@ -92,9 +92,19 @@ GRANT CREATE, DROP, ALTER, INDEX, SELECT, INSERT, UPDATE, DELETE
   ON \`ctf_%\`.* TO 'ctf_agent'@'127.0.0.1';
 FLUSH PRIVILEGES;
 SQL
-  # Save password for the Agent to read.
-  install -m 0600 /dev/null "$ETC_DIR/agent_db.json"
-  cat > "$ETC_DIR/agent_db.json" <<DB
+  echo "Created MariaDB user 'ctf_agent'@'127.0.0.1'"
+else
+  # User exists — generate a new password and reset it
+  AGENT_DB_PASS="$(openssl rand -hex 16)"
+  mysql <<SQL
+ALTER USER 'ctf_agent'@'127.0.0.1' IDENTIFIED BY '$AGENT_DB_PASS';
+FLUSH PRIVILEGES;
+SQL
+  echo "Reset MariaDB user 'ctf_agent'@'127.0.0.1' password"
+fi
+# Always save password for the Agent to read.
+install -m 0600 /dev/null "$ETC_DIR/agent_db.json"
+cat > "$ETC_DIR/agent_db.json" <<DB
 {
   "host": "127.0.0.1",
   "port": 3306,
@@ -102,8 +112,8 @@ SQL
   "password": "$AGENT_DB_PASS"
 }
 DB
-  echo "Created MariaDB user 'ctf_agent'@'127.0.0.1' (password saved to $ETC_DIR/agent_db.json)."
-fi
+chmod 0600 "$ETC_DIR/agent_db.json"
+echo "Saved DB credential to $ETC_DIR/agent_db.json"
 
 # 7. Systemd units
 install -m 0644 "$AGENT_SRC_DIR/systemd/ctf-agent.service" /etc/systemd/system/ctf-agent.service
