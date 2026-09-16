@@ -53,7 +53,7 @@ python3 -m venv "$OPT_DIR/venv"
 install -d /usr/local/bin
 cat > /usr/local/bin/ctf-agent <<EOF
 #!/usr/bin/env bash
-export PYTHONPATH="/opt/ctf-platform/target/agent/src:\${PYTHONPATH}"
+export PYTHONPATH="\$(dirname \$0)/../opt/ctf-platform/target/agent/src:\${PYTHONPATH}"
 exec "/opt/ctf-agent/venv/bin/python" -m src.cli "\$@"
 EOF
 chmod 0755 /usr/local/bin/ctf-agent
