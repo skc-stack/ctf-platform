@@ -242,7 +242,12 @@ echo "  .env 已寫入"
 echo "[7/10] 設定 Nginx vhost"
 
 # 複製設定檔
-cp "$SCRIPT_DIR/../nginx/ctf-server.conf" /etc/nginx/sites-available/ctf-server
+NGINX_CONF="$SCRIPT_DIR/nginx/ctf-server.conf"
+if [[ ! -f "$NGINX_CONF" ]]; then
+    echo "[ERR] Nginx 設定檔不存在: $NGINX_CONF"
+    exit 1
+fi
+cp "$NGINX_CONF" /etc/nginx/sites-available/ctf-server
 
 # 修改設定檔
 sed -i "s|ctf\.example\.edu\.tw|$CTF_DOMAIN|g" /etc/nginx/sites-available/ctf-server
