@@ -122,8 +122,6 @@ cat > "$ETC_DIR/agent_db.json" <<DB
 DB
 chmod 0644 "$ETC_DIR/agent_db.json"
 echo "Saved DB credential to $ETC_DIR/agent_db.json"
-chmod 0600 "$ETC_DIR/agent_db.json"
-echo "Saved DB credential to $ETC_DIR/agent_db.json"
 
 # 7. Systemd units
 install -m 0644 "$AGENT_SRC_DIR/systemd/ctf-agent.service" /etc/systemd/system/ctf-agent.service
