@@ -66,7 +66,7 @@ def cmd_status(args, cfg: Config) -> int:
             info["server_error"] = e.message
 
     # List locally installed challenges.
-    db = LocalDBConfig()
+    db = LocalDBConfig.load_from_file()
     try:
         with connect(db) as conn:
             with conn.cursor() as cur:
@@ -96,7 +96,7 @@ def cmd_status(args, cfg: Config) -> int:
 
 def cmd_sync(args, cfg: Config) -> int:
     cred = _cred_or_exit(cfg)
-    db = LocalDBConfig()
+    db = LocalDBConfig.load_from_file()
     installer = Installer(db, cfg.challenge_root)
     syncer = Syncer(cfg, cred, db, installer)
     report = syncer.sync_once()
@@ -118,7 +118,7 @@ def cmd_heartbeat(args, cfg: Config) -> int:
 
 
 def cmd_list(args, cfg: Config) -> int:
-    db = LocalDBConfig()
+    db = LocalDBConfig.load_from_file()
     with connect(db) as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -138,7 +138,7 @@ def cmd_reset(args, cfg: Config) -> int:
     if not args.challenge_id:
         print("ERROR: challenge_id required", file=sys.stderr)
         return 2
-    db = LocalDBConfig()
+    db = LocalDBConfig.load_from_file()
     resetter = Resetter(db, cfg.challenge_root)
     try:
         result = resetter.reset(args.challenge_id)
@@ -171,7 +171,7 @@ def cmd_doctor(args, cfg: Config) -> int:
     print(f"[ok] challenge root: {cr}")
     # DB connectivity.
     try:
-        db = LocalDBConfig()
+        db = LocalDBConfig.load_from_file()
         with connect(db) as conn:
             with conn.cursor() as cur:
                 cur.execute("SELECT 1")
