@@ -111,7 +111,7 @@ SQL
   echo "Reset MariaDB user 'ctf_agent' credentials"
 fi
 # Always save password for the Agent to read.
-install -m 0600 /dev/null "$ETC_DIR/agent_db.json"
+install -m 0644 /dev/null "$ETC_DIR/agent_db.json"
 cat > "$ETC_DIR/agent_db.json" <<DB
 {
   "host": "127.0.0.1",
@@ -120,7 +120,7 @@ cat > "$ETC_DIR/agent_db.json" <<DB
   "password": "$AGENT_DB_PASS"
 }
 DB
-chmod 0600 "$ETC_DIR/agent_db.json"
+chmod 0644 "$ETC_DIR/agent_db.json"
 echo "Saved DB credential to $ETC_DIR/agent_db.json"
 chmod 0600 "$ETC_DIR/agent_db.json"
 echo "Saved DB credential to $ETC_DIR/agent_db.json"
