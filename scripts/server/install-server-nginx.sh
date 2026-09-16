@@ -242,7 +242,7 @@ echo "  .env 已寫入"
 echo "[7/10] 設定 Nginx vhost"
 
 # 複製設定檔
-NGINX_CONF="$SCRIPT_DIR/nginx/ctf-server.conf"
+NGINX_CONF="$(dirname "$SCRIPT_DIR")/nginx/ctf-server.conf"
 if [[ ! -f "$NGINX_CONF" ]]; then
     echo "[ERR] Nginx 設定檔不存在: $NGINX_CONF"
     exit 1
