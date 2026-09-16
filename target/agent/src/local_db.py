@@ -11,8 +11,11 @@ challenge DB operations we use a dedicated user with limited privs
 """
 from __future__ import annotations
 
+import json
+import os
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Iterable, Iterator, Optional
 
 import pymysql
@@ -27,6 +30,24 @@ class LocalDBConfig:
     password: str = ""
     # Default DB the Agent uses for its own tables (ctf_target).
     default_db: str = "ctf_target"
+
+    @classmethod
+    def load_from_file(cls, path: Optional[str] = None) -> "LocalDBConfig":
+        """Load DB config from /etc/ctf-agent/agent_db.json (created by install.sh)."""
+        config_path = path or "/etc/ctf-agent/agent_db.json"
+        if os.path.isfile(config_path):
+            try:
+                with open(config_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                return cls(
+                    host=data.get("host", "127.0.0.1"),
+                    port=int(data.get("port", 3306)),
+                    user=data.get("user", "ctf_agent"),
+                    password=data.get("password", ""),
+                )
+            except (json.JSONDecodeError, ValueError, KeyError):
+                pass  # Fall back to defaults
+        return cls()
 
 
 @contextmanager
