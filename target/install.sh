@@ -82,7 +82,9 @@ fi
 chmod 0700 "$LIB_DIR"
 
 # 6. MariaDB: create the Agent user with limited privs
-if ! mysql -e "SELECT 1 FROM mysql.user WHERE user='ctf_agent'" >/dev/null 2>&1; then
+# Check if the user exists for ANY host pattern to determine if we need to create or alter
+AGENT_EXISTS=$(mysql -N -e "SELECT COUNT(*) FROM mysql.user WHERE user='ctf_agent'" 2>/dev/null || echo "0")
+if [[ "$AGENT_EXISTS" -eq "0" ]]; then
   AGENT_DB_PASS="$(openssl rand -hex 16)"
   mysql <<SQL
 CREATE USER 'ctf_agent'@'127.0.0.1' IDENTIFIED BY '$AGENT_DB_PASS';
@@ -94,13 +96,19 @@ FLUSH PRIVILEGES;
 SQL
   echo "Created MariaDB user 'ctf_agent'@'127.0.0.1'"
 else
-  # User exists — generate a new password and reset it
+  # User exists — drop and recreate to ensure clean state and new password
   AGENT_DB_PASS="$(openssl rand -hex 16)"
   mysql <<SQL
-ALTER USER 'ctf_agent'@'127.0.0.1' IDENTIFIED BY '$AGENT_DB_PASS';
+DROP USER IF EXISTS 'ctf_agent'@'127.0.0.1';
+DROP USER IF EXISTS 'ctf_agent'@'%';
+CREATE USER 'ctf_agent'@'127.0.0.1' IDENTIFIED BY '$AGENT_DB_PASS';
+GRANT CREATE, DROP, ALTER, INDEX, SELECT, INSERT, UPDATE, DELETE
+  ON \`ctf_target\`.* TO 'ctf_agent'@'127.0.0.1';
+GRANT CREATE, DROP, ALTER, INDEX, SELECT, INSERT, UPDATE, DELETE
+  ON \`ctf_%\`.* TO 'ctf_agent'@'127.0.0.1';
 FLUSH PRIVILEGES;
 SQL
-  echo "Reset MariaDB user 'ctf_agent'@'127.0.0.1' password"
+  echo "Reset MariaDB user 'ctf_agent' credentials"
 fi
 # Always save password for the Agent to read.
 install -m 0600 /dev/null "$ETC_DIR/agent_db.json"
@@ -112,6 +120,8 @@ cat > "$ETC_DIR/agent_db.json" <<DB
   "password": "$AGENT_DB_PASS"
 }
 DB
+chmod 0600 "$ETC_DIR/agent_db.json"
+echo "Saved DB credential to $ETC_DIR/agent_db.json"
 chmod 0600 "$ETC_DIR/agent_db.json"
 echo "Saved DB credential to $ETC_DIR/agent_db.json"
 
