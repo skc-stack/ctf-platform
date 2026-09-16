@@ -103,7 +103,7 @@ def create_app(config: Optional[Config] = None,
     def sync():
         c = _require_cred()
         try:
-            db = LocalDBConfig()
+            db = LocalDBConfig.load_from_file()
             installer = Installer(db, cfg.challenge_root)
             syncer = Syncer(cfg, c, db, installer)
             report = syncer.sync_once()
@@ -142,7 +142,7 @@ def create_app(config: Optional[Config] = None,
         if not challenge_id:
             return jsonify({"error": "challenge_id required"}), 400
         try:
-            db = LocalDBConfig()
+            db = LocalDBConfig.load_from_file()
             resetter = Resetter(db, cfg.challenge_root)
             result = resetter.reset(challenge_id)
             return jsonify({"ok": True, "result": asdict(result)})
