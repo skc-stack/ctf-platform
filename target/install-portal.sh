@@ -29,7 +29,7 @@ if ! command -v apache2ctl >/dev/null 2>&1; then
 fi
 
 # 2. Copy source
-install -d "$PORTAL_DEST"
+install -d "$PORTAL_DEST/public" "$PORTAL_DEST/src" "$PORTAL_DEST/views"
 cp -r "$PORTAL_SRC_DIR/src" "$PORTAL_DEST/src"
 cp -r "$PORTAL_SRC_DIR/views" "$PORTAL_DEST/views"
 cp "$PORTAL_SRC_DIR/public/index.php" "$PORTAL_DEST/public/index.php"

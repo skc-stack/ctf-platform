@@ -1,0 +1,60 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "CTF LAB" [ref=e4] [cursor=pointer]:
+        - /url: /
+      - navigation [ref=e7]:
+        - link "/ 題目" [ref=e8] [cursor=pointer]:
+          - /url: "#"
+        - link "/ 排行榜" [ref=e9] [cursor=pointer]:
+          - /url: /leaderboard
+        - link "/註冊" [ref=e10] [cursor=pointer]:
+          - /url: /register
+        - link "/登入" [ref=e11] [cursor=pointer]:
+          - /url: /login
+  - main [ref=e12]:
+    - generic [ref=e13]:
+      - generic [ref=e14]: SHEET — 登入 — CTF LAB
+      - generic [ref=e15]: v0.4 · 2026-09-17 14:08 render 1ms
+    - generic [ref=e17]:
+      - heading "登入" [level=1] [ref=e18]
+      - paragraph [ref=e20]: 使用 CTF LAB 帳號登入以開始挑戰。
+      - generic [ref=e21]:
+        - text: / 註記 登入後將回到
+        - code [ref=e22]: /admin
+      - generic [ref=e23]:
+        - generic [ref=e24]:
+          - generic [ref=e25]:
+            - generic [ref=e26]: 帳號
+            - textbox "帳號" [ref=e27]
+          - generic [ref=e28]:
+            - generic [ref=e29]: 密碼
+            - generic [ref=e30]:
+              - textbox "密碼 顯示或隱藏密碼" [ref=e31]
+              - button "顯示或隱藏密碼" [ref=e32] [cursor=pointer]:
+                - generic [ref=e33]: 
+        - generic [ref=e34]:
+          - generic [ref=e35]: 驗證碼
+          - generic [ref=e36]:
+            - generic [ref=e37]:
+              - img "驗證碼" [ref=e38]
+              - button "重新產生驗證碼" [ref=e39] [cursor=pointer]:
+                - generic [ref=e40]: 
+            - textbox "輸入圖中字元" [ref=e41]
+          - generic [ref=e42]: 不區分大小寫 · 輸入 5 個字元 · [↻] 重新產生
+        - generic [ref=e43]:
+          - button "[▸ 登入]" [ref=e44] [cursor=pointer]
+          - link "[+ 建立新帳號]" [ref=e45] [cursor=pointer]:
+            - /url: /register
+          - link "[? 忘記密碼]" [ref=e46] [cursor=pointer]:
+            - /url: /password/reset
+    - generic [ref=e47]:
+      - generic [ref=e48]:
+        - strong [ref=e49]: CTF LAB
+        - text: v0.4 · env=production
+      - generic [ref=e50]:
+        - strong [ref=e51]: 訪客
+        - text: IP
+      - generic [ref=e52]:
+        - text: PHP 8.3.6
+        - strong [ref=e53]: fpm-fcgi
