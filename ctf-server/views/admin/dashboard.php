@@ -28,6 +28,7 @@ $stats = $stats ?? [];
 
     <div class="ctf-dash-actions">
         <a href="/admin/users" class="ctf-btn ctf-btn-primary">[▸ 前往使用者審核]</a>
+        <a href="/admin/devices" class="ctf-btn ctf-btn-ghost">[▸ 裝置管理]</a>
     </div>
 
     <h2 class="ctf-dash-sub">/ 最近稽核日誌</h2>

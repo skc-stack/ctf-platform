@@ -122,4 +122,63 @@ final class DeviceRepository
             [':u' => $userId, ':s' => self::STATUS_ACTIVE]
         );
     }
+
+    /**
+     * List all devices with user info, paginated.
+     * @param int $page 1-based page number
+     * @param int $perPage items per page
+     * @return array{rows: array<int,array<string,mixed>>, total: int, page: int, perPage: int}
+     */
+    public function listAll(int $page = 1, int $perPage = 20): array
+    {
+        $offset = max(0, ($page - 1) * $perPage);
+        $total = (int)Connection::fetchOne(
+            'SELECT COUNT(*) AS c FROM devices'
+        )['c'];
+
+        $rows = Connection::fetchAll(
+            'SELECT d.*, u.username AS user_username, u.display_name AS user_display_name, u.role AS user_role
+             FROM devices d
+             JOIN users u ON u.id = d.user_id
+             ORDER BY d.last_seen_at DESC
+             LIMIT :limit OFFSET :offset',
+            [
+                ':limit'  => $perPage,
+                ':offset' => $offset,
+            ]
+        );
+
+        return [
+            'rows'    => $rows,
+            'total'   => $total,
+            'page'    => $page,
+            'perPage' => $perPage,
+        ];
+    }
+
+    /**
+     * List all activation codes with user info, including used/expired status.
+     * @return array<int,array<string,mixed>>
+     */
+    public function listActivationCodes(): array
+    {
+        return Connection::fetchAll(
+            'SELECT dac.*, u.username AS user_username, u.display_name AS user_display_name
+             FROM device_activation_codes dac
+             JOIN users u ON u.id = dac.user_id
+             ORDER BY dac.created_at DESC'
+        );
+    }
+
+    /**
+     * Delete an activation code by id.
+     */
+    public function deleteActivationCode(int $id): bool
+    {
+        $affected = Connection::run(
+            'DELETE FROM device_activation_codes WHERE id = :id',
+            [':id' => $id]
+        )->rowCount();
+        return $affected > 0;
+    }
 }

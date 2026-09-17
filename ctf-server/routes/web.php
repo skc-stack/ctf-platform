@@ -14,6 +14,7 @@ use CTF\Server\Controllers\Teacher\GroupController as TeacherGroups;
 use CTF\Server\Controllers\Teacher\ChallengeController as TeacherChallenges;
 use CTF\Server\Controllers\Admin\DashboardController as AdminDashboard;
 use CTF\Server\Controllers\Admin\UserApprovalController;
+use CTF\Server\Controllers\Admin\DeviceController as AdminDeviceController;
 use CTF\Server\Controllers\DeviceController;
 use CTF\Server\Controllers\DeviceApiController;
 use CTF\Server\Middleware\Guest;
@@ -63,6 +64,11 @@ function ctf_web_routes(Router $router): void
     $router->get('/admin/users', [Auth::class, RequireAdmin::class], [UserApprovalController::class, 'index']);
     $router->post('/admin/users/{id}/approve', [Auth::class, RequireAdmin::class, CSRF::class], [UserApprovalController::class, 'approve']);
     $router->post('/admin/users/{id}/disable', [Auth::class, RequireAdmin::class, CSRF::class], [UserApprovalController::class, 'disable']);
+
+    // Admin: devices
+    $router->get('/admin/devices', [Auth::class, RequireAdmin::class], [AdminDeviceController::class, 'index']);
+    $router->post('/admin/devices/{id}/revoke', [Auth::class, RequireAdmin::class, CSRF::class], [AdminDeviceController::class, 'revoke']);
+    $router->post('/admin/devices/codes/{id}', [Auth::class, RequireAdmin::class, CSRF::class], [AdminDeviceController::class, 'deleteActivationCode']);
 
     // Teacher: groups
     $router->get('/teacher/groups', [Auth::class, RequireTeacher::class], [TeacherGroups::class, 'index']);
