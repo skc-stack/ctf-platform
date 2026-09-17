@@ -41,6 +41,10 @@ $active_tasks_list = $active_tasks_list ?? [];
         <p class="ctf-dash-meta"><i class="bi bi-clock-history"></i> 上次解題時間：<?= htmlspecialchars($last_solve, ENT_QUOTES, 'UTF-8') ?></p>
     <?php endif; ?>
 
+    <div class="ctf-dash-actions">
+        <a href="/student/devices" class="ctf-btn ctf-btn-primary">[▸ 我的裝置 / Activation Code]</a>
+    </div>
+
     <?php if (!empty($active_tasks_list)): ?>
     <h2 class="ctf-dash-sub">/ 進行中的 Task</h2>
     <table class="ctf-table">
