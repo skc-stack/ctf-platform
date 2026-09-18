@@ -55,7 +55,13 @@ final class NylasClient
             throw new \InvalidArgumentException("Invalid recipient email: $toEmail");
         }
 
-        $url = sprintf('%s/v3/grants/%s/messages/send', $this->apiUri, $this->grantId);
+        // Use /me endpoint if using a user access token (recommended)
+        // Falls back to grant-specific endpoint for app-level tokens
+        $baseUrl = $this->grantId !== ''
+            ? sprintf('%s/v3/grants/%s', $this->apiUri, $this->grantId)
+            : sprintf('%s/v3/me', $this->apiUri);
+
+        $url = $baseUrl . '/messages/send';
 
         $payload = [
             'subject'   => $subject,
@@ -142,6 +148,6 @@ final class NylasClient
 
     public function isConfigured(): bool
     {
-        return $this->apiUri !== '' && $this->apiKey !== '' && $this->grantId !== '';
+        return $this->apiUri !== '' && $this->apiKey !== '';
     }
 }

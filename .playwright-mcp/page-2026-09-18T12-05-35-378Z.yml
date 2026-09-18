@@ -1,0 +1,58 @@
+- generic [active] [ref=f7e1]:
+  - banner [ref=f7e2]:
+    - generic [ref=f7e3]:
+      - link "CTF LAB" [ref=f7e4] [cursor=pointer]:
+        - /url: /
+      - navigation [ref=f7e7]:
+        - link "/ 排行榜" [ref=f7e8] [cursor=pointer]:
+          - /url: /leaderboard
+        - link "/註冊" [ref=f7e9] [cursor=pointer]:
+          - /url: /register
+        - link "/登入" [ref=f7e10] [cursor=pointer]:
+          - /url: /login
+  - generic [ref=f7e11]:
+    - generic [ref=f7e12]: 
+    - text: 如果該帳號存在且已驗證 Email，重設連結已寄出（請於 60 分鐘內點擊）
+  - main [ref=f7e13]:
+    - generic [ref=f7e14]:
+      - generic [ref=f7e15]: SHEET — 登入 — CTF LAB
+      - generic [ref=f7e16]: v0.4 · 2026-09-18 20:05 render 7.4ms
+    - generic [ref=f7e18]:
+      - heading "登入" [level=1] [ref=f7e19]
+      - paragraph [ref=f7e21]: 使用 CTF LAB 帳號登入以開始挑戰。
+      - generic [ref=f7e22]:
+        - generic [ref=f7e23]:
+          - generic [ref=f7e24]:
+            - generic [ref=f7e25]: 帳號
+            - textbox "帳號" [ref=f7e26]
+          - generic [ref=f7e27]:
+            - generic [ref=f7e28]: 密碼
+            - generic [ref=f7e29]:
+              - textbox "密碼 顯示或隱藏密碼" [ref=f7e30]
+              - button "顯示或隱藏密碼" [ref=f7e31] [cursor=pointer]:
+                - generic [ref=f7e32]: 
+        - generic [ref=f7e33]:
+          - generic [ref=f7e34]: 驗證碼
+          - generic [ref=f7e35]:
+            - generic [ref=f7e36]:
+              - img "驗證碼" [ref=f7e37]
+              - button "重新產生驗證碼" [ref=f7e38] [cursor=pointer]:
+                - generic [ref=f7e39]: 
+            - textbox "輸入圖中字元" [ref=f7e40]
+          - generic [ref=f7e41]: 不區分大小寫 · 輸入 5 個字元 · [↻] 重新產生
+        - generic [ref=f7e42]:
+          - button "[▸ 登入]" [ref=f7e43] [cursor=pointer]
+          - link "[+ 建立新帳號]" [ref=f7e44] [cursor=pointer]:
+            - /url: /register
+          - link "[? 忘記密碼]" [ref=f7e45] [cursor=pointer]:
+            - /url: /password/reset
+    - generic [ref=f7e46]:
+      - generic [ref=f7e47]:
+        - strong [ref=f7e48]: CTF LAB
+        - text: v0.4 · env=production
+      - generic [ref=f7e49]:
+        - strong [ref=f7e50]: 訪客
+        - text: IP
+      - generic [ref=f7e51]:
+        - text: PHP 8.3.6
+        - strong [ref=f7e52]: fpm-fcgi
