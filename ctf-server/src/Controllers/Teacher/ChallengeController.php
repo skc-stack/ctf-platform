@@ -450,5 +450,74 @@ final class ChallengeController extends BaseController
         return Response::redirect('/teacher/challenges/' . $id);
     }
 
+    /* ===== CKEditor Image Upload ===== */
+
+    /**
+     * Handle CKEditor image upload.
+     * Accepts PNG, JPG, GIF, WEBP images and stores them in the teacher's uploads directory.
+     * Returns JSON suitable for CKEditor: {"url": "/storage/uploads/..."}
+     */
+    public function uploadImage(Request $req): Response
+    {
+        // Verify teacher is logged in
+        if (empty($_SESSION['user']) || $_SESSION['user']['role'] !== 'teacher') {
+            return Response::json(['error' => 'Unauthorized'], 401);
+        }
+
+        $teacherId = (int)$_SESSION['user']['id'];
+
+        // Check if file was uploaded
+        if (!isset($_FILES['upload']) || $_FILES['upload']['error'] !== UPLOAD_ERR_OK) {
+            $errorMsg = match ($_FILES['upload']['error'] ?? UPLOAD_ERR_NO_FILE) {
+                UPLOAD_ERR_INI_SIZE => '檔案大小超過伺服器限制',
+                UPLOAD_ERR_FORM_SIZE => '檔案大小超過表單限制',
+                UPLOAD_ERR_PARTIAL => '檔案只上傳了一部分',
+                UPLOAD_ERR_NO_FILE => '沒有選擇檔案',
+                default => '上傳錯誤',
+            };
+            return Response::json(['error' => $errorMsg], 400);
+        }
+
+        $file = $_FILES['upload'];
+
+        // Validate file type (check MIME type and extension)
+        $allowedMimes = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
+        $allowedExts = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
+
+        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        $mime = mime_content_type($file['tmp_name']);
+
+        if (!in_array($ext, $allowedExts) || !in_array($mime, $allowedMimes)) {
+            return Response::json(['error' => '只允許上傳 PNG、JPG、GIF、WEBP 格式'], 400);
+        }
+
+        // Validate file size (max 2MB)
+        if ($file['size'] > 2 * 1024 * 1024) {
+            return Response::json(['error' => '檔案大小不可超過 2MB'], 400);
+        }
+
+        // Create uploads directory
+        $uploadDir = dirname(__DIR__, 4) . '/storage/uploads/teachers/' . $teacherId;
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+
+        // Generate unique filename
+        $newName = sprintf('%s_%d.%s', bin2hex(random_bytes(8)), time(), $ext);
+        $targetPath = $uploadDir . '/' . $newName;
+
+        if (!move_uploaded_file($file['tmp_name'], $targetPath)) {
+            return Response::json(['error' => '儲存檔案失敗'], 500);
+        }
+
+        // Return URL for CKEditor
+        $url = '/storage/uploads/teachers/' . $teacherId . '/' . $newName;
+
+        return Response::json([
+            'uploaded' => 1,
+            'url' => $url,
+        ], 200);
+    }
+
     /* ===== Helpers ===== */
 }

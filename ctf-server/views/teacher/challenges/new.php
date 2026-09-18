@@ -65,7 +65,7 @@ $error = $error ?? null;
 
         <label class="ctf-field">
             <span class="ctf-field-label">題目說明</span>
-            <textarea name="description" rows="3" maxlength="2000"
+            <textarea name="description" id="description" rows="10" maxlength="5000"
                       placeholder="給學生看的題目描述…"><?= htmlspecialchars($old['description'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
         </label>
 
@@ -94,4 +94,51 @@ $error = $error ?? null;
             </a>
         </div>
     </form>
+
+    <!-- CKEditor 5 -->
+    <script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        ClassicEditor.create(document.querySelector('#description'), {
+            toolbar: ['heading', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList', '|', 'outdent', 'indent', '|', 'imageUpload', 'blockQuote', 'insertTable', '|', 'undo', 'redo'],
+            image: {
+                upload: {
+                    types: ['png', 'jpeg', 'gif', 'webp']
+                }
+            }
+        }).then(function(editor) {
+            editor.plugins.get('FileRepository').createUploadAdapter = function(loader) {
+                return {
+                    upload: function() {
+                        return loader.file.then(function(file) {
+                            return new Promise(function(resolve, reject) {
+                                var formData = new FormData();
+                                formData.append('upload', file);
+                                fetch('/api/v1/teacher/upload-image', {
+                                    method: 'POST',
+                                    body: formData,
+                                    credentials: 'same-origin',
+                                    headers: {
+                                        'X-CSRF': document.querySelector('input[name="_csrf"]') ? document.querySelector('input[name="_csrf"]').value : ''
+                                    }
+                                })
+                                .then(function(response) { return response.json(); })
+                                .then(function(data) {
+                                    if (data.url) {
+                                        resolve({ default: data.url });
+                                    } else {
+                                        reject(data.error || '上傳失敗');
+                                    }
+                                })
+                                .catch(function(err) { reject(err); });
+                            });
+                        });
+                    }
+                };
+            };
+        }).catch(function(err) {
+            console.error('CKEditor init error:', err);
+        });
+    });
+    </script>
 </section>

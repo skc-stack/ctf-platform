@@ -126,4 +126,6 @@ function ctf_web_routes(Router $router): void
     $router->post('/api/v1/device/activate', [], [DeviceApiController::class, 'activate']);
     $router->get('/api/v1/device/info', [DeviceAuth::class], [DeviceController::class, 'info']);
     $router->post('/api/v1/device/heartbeat', [DeviceAuth::class], [DeviceController::class, 'heartbeat']);
+    // Teacher: CKEditor image upload
+    $router->post('/api/v1/teacher/upload-image', [Auth::class, RequireTeacher::class], [TeacherChallenges::class, 'uploadImage']);
 }

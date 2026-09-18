@@ -59,7 +59,7 @@ $success = $success ?? null;
     <?php endif; ?>
 
     <?php if (!empty($challenge['description'])): ?>
-        <p><?= nl2br(htmlspecialchars($challenge['description'], ENT_QUOTES, 'UTF-8')) ?></p>
+        <div class="challenge-description"><?= nl2br(preg_replace('/<script\b[^>]*>.*?<\/script>/si', '', $challenge['description'])) ?></div>
     <?php endif; ?>
 
     <div class="ctf-dash-actions">

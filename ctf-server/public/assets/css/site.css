@@ -913,3 +913,22 @@ form[data-locked="true"] {
     .ctf-nav-links { gap: 10px; font-size: 16px; }
     .ctf-nav-user-name { display: none; }
 }
+
+/* CKEditor content styling */
+.challenge-description {
+    line-height: 1.7;
+    margin: 1rem 0;
+}
+.challenge-description img {
+    max-width: 100%;
+    height: auto;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+}
+.challenge-description figure.image {
+    display: block;
+    margin: 1rem 0;
+}
+.challenge-description figure.image img {
+    display: block;
+}

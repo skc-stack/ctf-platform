@@ -7,6 +7,7 @@ use CTF\Server\Controllers\AuthController;
 use CTF\Server\Controllers\CaptchaController;
 use CTF\Server\Controllers\Student\DashboardController as StudentDashboard;
 use CTF\Server\Controllers\Student\GroupController as StudentGroups;
+use CTF\Server\Controllers\Student\DeviceController as StudentDevice;
 use CTF\Server\Controllers\SubmissionController;
 use CTF\Server\Controllers\TaskController;
 use CTF\Server\Controllers\Teacher\DashboardController as TeacherDashboard;
@@ -100,6 +101,11 @@ function ctf_web_routes(Router $router): void
     $router->post('/student/groups/join', [Auth::class, RequireStudent::class, CSRF::class], [StudentGroups::class, 'join']);
     $router->post('/student/groups/{id}/leave', [Auth::class, RequireStudent::class, CSRF::class], [StudentGroups::class, 'leave']);
 
+    // Student: devices
+    $router->get('/student/devices', [Auth::class, RequireStudent::class], [StudentDevice::class, 'index']);
+    $router->post('/api/v1/student/devices/request-code', [Auth::class, RequireStudent::class], [StudentDevice::class, 'requestCode']);
+    $router->post('/api/v1/student/devices/revoke/{id}', [Auth::class, RequireStudent::class, CSRF::class], [StudentDevice::class, 'revoke']);
+
     // Student: tasks
     $router->get('/student/task/{id}', [Auth::class, RequireStudent::class], [TaskController::class, 'show']);
     $router->post('/student/task/{id}/cancel', [Auth::class, RequireStudent::class, CSRF::class], [TaskController::class, 'cancel']);
@@ -120,4 +126,6 @@ function ctf_web_routes(Router $router): void
     $router->post('/api/v1/device/activate', [], [DeviceApiController::class, 'activate']);
     $router->get('/api/v1/device/info', [DeviceAuth::class], [DeviceController::class, 'info']);
     $router->post('/api/v1/device/heartbeat', [DeviceAuth::class], [DeviceController::class, 'heartbeat']);
+    // Teacher: CKEditor image upload
+    $router->post('/api/v1/teacher/upload-image', [Auth::class, RequireTeacher::class], [TeacherChallenges::class, 'uploadImage']);
 }
