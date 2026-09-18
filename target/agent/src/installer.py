@@ -78,6 +78,10 @@ class Installer:
             except ZipSafetyError as e:
                 raise InstallError(f"unsafe ZIP entry: {e}") from e
 
+            # Flatten: if the challenge root contains exactly one subdirectory (e.g., DEMO-001/web/)
+            # and no direct files, move everything up one level for compatibility.
+            self._flatten_if_needed(install_path)
+
             # 4) Parse manifest.
             manifest_path = install_path / "manifest.json"
             try:
@@ -121,6 +125,41 @@ class Installer:
     @staticmethod
     def verify_sha256(data: bytes) -> str:
         return hashlib.sha256(data).hexdigest()
+
+    @staticmethod
+    def _flatten_if_needed(install_path: Path) -> None:
+        """Flatten nested challenge directory structure.
+
+        If the ZIP was packaged with a single subdirectory (e.g., DEMO-001/web/)
+        containing all challenge files, move everything up one level so the
+        entrypoint URL (/challenge/DEMO-001/) finds index.php directly.
+
+        Detects this case by checking:
+        - install_path/ contains exactly one subdirectory
+        - install_path/ contains NO direct files (only that subdirectory)
+        """
+        contents = list(install_path.iterdir())
+        if not contents:
+            return
+
+        subdirs = [p for p in contents if p.is_dir() and p.name != '.tmp']
+        files = [p for p in contents if p.is_file()]
+
+        # Only flatten if there's exactly one subdir and NO direct files
+        if len(subdirs) == 1 and len(files) == 0:
+            nested = subdirs[0]
+            log.info(f"Flattening nested structure: {nested.name}/ -> ./")
+            for item in nested.iterdir():
+                dest = install_path / item.name
+                if item.is_dir():
+                    # Merge directories
+                    if dest.exists():
+                        shutil.rmtree(dest)
+                    shutil.copytree(item, dest)
+                else:
+                    shutil.copy2(item, dest)
+            # Remove the nested directory
+            shutil.rmtree(nested)
 
     def _run_setup_sql(self, install_path: Path, manifest: Manifest) -> None:
         assert manifest.database is not None

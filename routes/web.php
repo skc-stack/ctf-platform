@@ -8,6 +8,7 @@ use CTF\Server\Controllers\CaptchaController;
 use CTF\Server\Controllers\Student\DashboardController as StudentDashboard;
 use CTF\Server\Controllers\Student\GroupController as StudentGroups;
 use CTF\Server\Controllers\Student\DeviceController as StudentDevice;
+use CTF\Server\Controllers\Student\ChallengeController as StudentChallenge;
 use CTF\Server\Controllers\SubmissionController;
 use CTF\Server\Controllers\TaskController;
 use CTF\Server\Controllers\Teacher\DashboardController as TeacherDashboard;
@@ -68,6 +69,7 @@ function ctf_web_routes(Router $router): void
 
     // Admin: devices
     $router->get('/admin/devices', [Auth::class, RequireAdmin::class], [AdminDeviceController::class, 'index']);
+    $router->get('/admin/devices/{id}/sync', [Auth::class, RequireAdmin::class], [AdminDeviceController::class, 'syncStatus']);
     $router->post('/admin/devices/{id}/revoke', [Auth::class, RequireAdmin::class, CSRF::class], [AdminDeviceController::class, 'revoke']);
     $router->post('/admin/devices/codes/{id}', [Auth::class, RequireAdmin::class, CSRF::class], [AdminDeviceController::class, 'deleteActivationCode']);
 
@@ -101,6 +103,10 @@ function ctf_web_routes(Router $router): void
     $router->post('/student/groups/join', [Auth::class, RequireStudent::class, CSRF::class], [StudentGroups::class, 'join']);
     $router->post('/student/groups/{id}/leave', [Auth::class, RequireStudent::class, CSRF::class], [StudentGroups::class, 'leave']);
 
+    // Student: challenges
+    $router->get('/student/challenges', [Auth::class, RequireStudent::class], [StudentChallenge::class, 'index']);
+    $router->get('/student/challenges/{id}', [Auth::class, RequireStudent::class], [StudentChallenge::class, 'show']);
+
     // Student: devices
     $router->get('/student/devices', [Auth::class, RequireStudent::class], [StudentDevice::class, 'index']);
     $router->post('/api/v1/student/devices/request-code', [Auth::class, RequireStudent::class], [StudentDevice::class, 'requestCode']);
@@ -115,6 +121,7 @@ function ctf_web_routes(Router $router): void
     // Device: task validate + complete
     $router->post('/api/v1/device/task/validate', [DeviceAuth::class, RateLimitTaskValidate::class], [TaskController::class, 'validateApi']);
     $router->post('/api/v1/device/task/complete', [DeviceAuth::class, RateLimitFlagSubmit::class], [SubmissionController::class, 'completeFromDevice']);
+    $router->post('/api/v1/device/sync-report', [DeviceAuth::class], [DeviceController::class, 'syncReport']);
 
     // Leaderboard (public — but visible to anyone)
     $router->get('/leaderboard', [], [HomeController::class, 'leaderboard']);
@@ -126,4 +133,6 @@ function ctf_web_routes(Router $router): void
     $router->post('/api/v1/device/activate', [], [DeviceApiController::class, 'activate']);
     $router->get('/api/v1/device/info', [DeviceAuth::class], [DeviceController::class, 'info']);
     $router->post('/api/v1/device/heartbeat', [DeviceAuth::class], [DeviceController::class, 'heartbeat']);
+    // Teacher: CKEditor image upload
+    $router->post('/api/v1/teacher/upload-image', [Auth::class, RequireTeacher::class], [TeacherChallenges::class, 'uploadImage']);
 }

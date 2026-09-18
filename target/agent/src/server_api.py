@@ -88,6 +88,15 @@ class ServerAPI:
             "detail": detail,
         })
 
+    def sync_report(self, challenges: list[dict]) -> ServerResponse:
+        """POST /api/v1/device/sync-report — report installed challenges to server.
+
+        challenges: list of {"challenge_id": str, "version": int, "sha256": str}
+        """
+        return self._post("/api/v1/device/sync-report", {
+            "challenges": challenges,
+        })
+
     # ----- internal -----
 
     def _base_headers(self) -> dict:

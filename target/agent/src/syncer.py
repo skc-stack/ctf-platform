@@ -98,7 +98,42 @@ class Syncer:
                 log.error("install %s v%s failed: %s", cid, version, e)
                 report.failed.append(cid)
 
+        # Report installed challenges to server
+        self._report_sync_status()
+
         return report
+
+    def _report_sync_status(self) -> None:
+        """Report installed challenges to the server."""
+        try:
+            installed = self._get_installed_challenges()
+            if installed:
+                resp = self.api.sync_report(installed)
+                if resp.ok:
+                    log.info("Synced %d challenges to server", len(installed))
+                else:
+                    log.warning("Failed to report sync status: %s", resp.body)
+        except Exception as e:
+            log.warning("Could not report sync status: %s", e)
+
+    def _get_installed_challenges(self) -> list[dict]:
+        """Get list of installed challenges from local DB."""
+        challenges = []
+        try:
+            with connect(self.db_config) as conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "SELECT challenge_id, version, sha256 FROM installed_challenges"
+                    )
+                    for row in cur.fetchall():
+                        challenges.append({
+                            "challenge_id": row["challenge_id"],
+                            "version": int(row["version"]),
+                            "sha256": row["sha256"],
+                        })
+        except Exception as e:
+            log.warning("Could not get installed challenges: %s", e)
+        return challenges
 
     def _local_version(self, challenge_id: str) -> Optional[int]:
         with connect(self.db_config) as conn:

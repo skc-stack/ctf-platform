@@ -1,0 +1,8 @@
+# Allow Authorization header to reach PHP (needed for Device API Bearer tokens)
+CGIPassAuth On
+
+# Forward all requests to index.php
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [QSA,L]
