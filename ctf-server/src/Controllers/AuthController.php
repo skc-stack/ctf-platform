@@ -242,12 +242,18 @@ final class AuthController extends BaseController
             if ($user && !empty($user['email'])) {
                 $ttl = (int)\CTF\Server\Support\Config::get('PASSWORD_RESET_TTL', 60);
                 $resetUrl = $this->absoluteUrl('/password/reset/confirm') . '?token=' . $token;
-                $this->mailer->sendPasswordResetEmail(
+                $sent = $this->mailer->sendPasswordResetEmail(
                     (string)$user['email'],
                     (string)$user['display_name'],
                     $resetUrl,
                     $ttl,
                 );
+                if (!$sent) {
+                    Logger::get()->warning('password_reset.email_failed', [
+                        'user_id' => $user['id'],
+                        'email' => $user['email'],
+                    ]);
+                }
             }
             // We don't leak whether the account exists. Log a separate audit row.
             \CTF\Server\Services\AuditLog::fromRequest(

@@ -1,0 +1,55 @@
+- generic [ref=f3e1]:
+  - banner [ref=f3e2]:
+    - generic [ref=f3e3]:
+      - link "CTF LAB" [ref=f3e4] [cursor=pointer]:
+        - /url: /
+      - navigation [ref=f3e7]:
+        - link "/ 排行榜" [ref=f3e8] [cursor=pointer]:
+          - /url: /leaderboard
+        - link "/註冊" [ref=f3e9] [cursor=pointer]:
+          - /url: /register
+        - link "/登入" [ref=f3e10] [cursor=pointer]:
+          - /url: /login
+  - main [ref=f3e11]:
+    - generic [ref=f3e12]:
+      - generic [ref=f3e13]: SHEET — 登入 — CTF LAB
+      - generic [ref=f3e14]: v0.4 · 2026-09-18 19:59 render 9.5ms
+    - generic [ref=f3e16]:
+      - heading "登入" [level=1] [ref=f3e17]
+      - paragraph [ref=f3e19]: 使用 CTF LAB 帳號登入以開始挑戰。
+      - generic [ref=f3e20]:
+        - generic [ref=f3e21]:
+          - generic [ref=f3e22]:
+            - generic [ref=f3e23]: 帳號
+            - textbox "帳號" [ref=f3e24]: CtfAdmin
+          - generic [ref=f3e25]:
+            - generic [ref=f3e26]: 密碼
+            - generic [ref=f3e27]:
+              - textbox "密碼 顯示或隱藏密碼" [ref=f3e28]: Password@123
+              - button "顯示或隱藏密碼" [ref=f3e29] [cursor=pointer]:
+                - generic [ref=f3e30]: 
+        - generic [ref=f3e31]:
+          - generic [ref=f3e32]: 驗證碼
+          - generic [ref=f3e33]:
+            - generic [ref=f3e34]:
+              - img "驗證碼" [ref=f3e35]
+              - button "重新產生驗證碼" [ref=f3e36] [cursor=pointer]:
+                - generic [ref=f3e37]: 
+            - textbox "輸入圖中字元" [active] [ref=f3e38]
+          - generic [ref=f3e39]: 不區分大小寫 · 輸入 5 個字元 · [↻] 重新產生
+        - generic [ref=f3e40]:
+          - button "[▸ 登入]" [ref=f3e41] [cursor=pointer]
+          - link "[+ 建立新帳號]" [ref=f3e42] [cursor=pointer]:
+            - /url: /register
+          - link "[? 忘記密碼]" [ref=f3e43] [cursor=pointer]:
+            - /url: /password/reset
+    - generic [ref=f3e44]:
+      - generic [ref=f3e45]:
+        - strong [ref=f3e46]: CTF LAB
+        - text: v0.4 · env=production
+      - generic [ref=f3e47]:
+        - strong [ref=f3e48]: 訪客
+        - text: IP
+      - generic [ref=f3e49]:
+        - text: PHP 8.3.6
+        - strong [ref=f3e50]: fpm-fcgi

@@ -60,7 +60,11 @@ final class Mailer
         $subject = sprintf('[%s] 重設密碼請求', $appName);
         $body = $this->renderResetBody($appName, $displayName, $resetUrl, $ttlMinutes);
         try {
-            $this->nylas->send($toEmail, $subject, $body, $displayName);
+            $result = $this->nylas->send($toEmail, $subject, $body, $displayName);
+            Logger::get()->info('mailer.password_reset_sent', [
+                'to' => $toEmail,
+                'message_id' => $result['data']['id'] ?? null,
+            ]);
             return true;
         } catch (\Throwable $e) {
             Logger::get()->error('mailer.sendPasswordResetEmail', [
