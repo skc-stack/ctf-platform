@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html><head><link rel="stylesheet" href="/assets/css/site.css"></head>
+<body style="background:#0e1116;padding:32px;color:#fff;font-family:monospace">
+  <h3>test 1: side by side</h3>
+  <div class="ctf-dash-actions">
+    <a href="#" class="ctf-btn" id="a1">
+      <i class="bi bi-pencil-square"></i> 編輯資料
+    </a>
+    <form action="#" method="post" class="ctf-dash-action-form" id="f1" onsubmit="return false">
+      <input type="hidden" name="_csrf" value="abc123">
+      <button type="submit" class="ctf-btn ctf-btn-primary" id="b1">
+        <i class="bi bi-rocket-takeoff"></i> 發布
+      </button>
+    </form>
+    <a href="#" class="ctf-btn ctf-btn-ghost" id="a2">
+      <i class="bi bi-arrow-left"></i> 回到列表
+    </a>
+  </div>
+  <pre id="out" style="margin-top:24px;background:#222;padding:12px"></pre>
+  <script>
+    function dump(id, label) {
+      const el = document.getElementById(id);
+      const r = el.getBoundingClientRect();
+      const cs = getComputedStyle(el);
+      return label + ': ' + r.width.toFixed(1) + ' x ' + r.height.toFixed(1)
+        + ' | font=' + cs.fontSize + ' lh=' + cs.lineHeight
+        + ' | border=' + cs.borderTopWidth + ' pad=' + cs.paddingTop + '/' + cs.paddingBottom
+        + ' | display=' + cs.display;
+    }
+    document.getElementById('out').textContent =
+      dump('a1', 'A 編輯') + '\n' +
+      dump('b1', 'B 發布 (in form)') + '\n' +
+      dump('a2', 'A 回到') + '\n' +
+      'form parent display=' + getComputedStyle(document.getElementById('f1')).display;
+  </script>
+</body></html>
