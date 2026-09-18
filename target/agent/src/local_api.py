@@ -31,6 +31,20 @@ from .syncer import Syncer
 log = logging.getLogger("ctf-agent.local_api")
 
 
+def _write_dynamic_flag(challenge_id: str, flag: str) -> None:
+    """Write the dynamic flag to the challenge directory for the entrypoint page to read."""
+    try:
+        # Get the challenge root from config
+        db = LocalDBConfig.load_from_file()
+        challenge_root = db.config.get("challenge_root", "/srv/ctf/challenges")
+        flag_file = Path(challenge_root) / challenge_id / ".current_flag"
+        flag_file.parent.mkdir(parents=True, exist_ok=True)
+        flag_file.write_text(flag + "\n")
+        log.info(f"Wrote dynamic flag for {challenge_id} to {flag_file}")
+    except Exception as e:
+        log.warning(f"Failed to write dynamic flag: {e}")
+
+
 def create_app(config: Optional[Config] = None,
                credential: Optional[Credential] = None) -> Flask:
     """Build the Flask app. Pass in config + credential for tests; in production
@@ -124,11 +138,22 @@ def create_app(config: Optional[Config] = None,
         try:
             resp = ServerAPI(cfg, c).validate_task(task_token)
             data = resp.body.get("data", {})
+            challenge_id = data.get("challenge_id")
+            flag = data.get("flag")
+            entrypoint = data.get("entrypoint")
+            challenge_version = data.get("challenge_version")
+
+            # Write the dynamic flag to the challenge directory
+            # so the entrypoint page can display it
+            if flag and challenge_id:
+                _write_dynamic_flag(challenge_id, flag)
+
             return jsonify({
                 "ok": True,
-                "challenge_id": data.get("challenge_id"),
-                "entrypoint": data.get("entrypoint"),
-                "challenge_version": data.get("challenge_version"),
+                "challenge_id": challenge_id,
+                "flag": flag,
+                "entrypoint": entrypoint,
+                "challenge_version": challenge_version,
             })
         except ServerAPIError as e:
             return jsonify({"error": e.message}), e.status_code
