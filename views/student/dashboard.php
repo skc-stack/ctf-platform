@@ -42,7 +42,8 @@ $active_tasks_list = $active_tasks_list ?? [];
     <?php endif; ?>
 
     <div class="ctf-dash-actions">
-        <a href="/student/devices" class="ctf-btn ctf-btn-primary">[▸ 我的裝置 / Activation Code]</a>
+        <a href="/student/challenges" class="ctf-btn ctf-btn-primary"><i class="bi bi-collection"></i> 題目列表</a>
+        <a href="/student/devices" class="ctf-btn ctf-btn-ghost">[▸ 我的裝置 / Activation Code]</a>
     </div>
 
     <?php if (!empty($active_tasks_list)): ?>
@@ -52,7 +53,12 @@ $active_tasks_list = $active_tasks_list ?? [];
         <tbody>
         <?php foreach ($active_tasks_list as $t): ?>
             <tr>
-                <td><i class="bi bi-terminal"></i> <?= htmlspecialchars($t['challenge_title'], ENT_QUOTES, 'UTF-8') ?></td>
+                <td>
+                    <i class="bi bi-terminal"></i>
+                    <a href="/student/challenges/<?= (int)$t['challenge_id'] ?>" class="ctf-link">
+                        <?= htmlspecialchars($t['challenge_title'], ENT_QUOTES, 'UTF-8') ?>
+                    </a>
+                </td>
                 <td class="ctf-mono"><?= htmlspecialchars($t['started_at'], ENT_QUOTES, 'UTF-8') ?></td>
                 <td class="ctf-mono"><?= htmlspecialchars($t['expires_at'], ENT_QUOTES, 'UTF-8') ?></td>
                 <td><span class="ctf-tag" style="color:var(--drafting-green);border-color:var(--drafting-green)">active</span></td>
@@ -81,7 +87,9 @@ $active_tasks_list = $active_tasks_list ?? [];
             <?php foreach ($challenges as $ch): ?>
                 <tr>
                     <td>
-                        <strong><?= htmlspecialchars($ch['title'], ENT_QUOTES, 'UTF-8') ?></strong>
+                        <a href="/student/challenges/<?= (int)$ch['id'] ?>" class="ctf-link">
+                            <strong><?= htmlspecialchars($ch['title'], ENT_QUOTES, 'UTF-8') ?></strong>
+                        </a>
                         <div class="ctf-muted" style="font-size:14px"><?= htmlspecialchars($ch['slug'], ENT_QUOTES, 'UTF-8') ?></div>
                     </td>
                     <td>

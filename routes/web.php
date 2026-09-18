@@ -8,6 +8,7 @@ use CTF\Server\Controllers\CaptchaController;
 use CTF\Server\Controllers\Student\DashboardController as StudentDashboard;
 use CTF\Server\Controllers\Student\GroupController as StudentGroups;
 use CTF\Server\Controllers\Student\DeviceController as StudentDevice;
+use CTF\Server\Controllers\Student\ChallengeController as StudentChallenge;
 use CTF\Server\Controllers\SubmissionController;
 use CTF\Server\Controllers\TaskController;
 use CTF\Server\Controllers\Teacher\DashboardController as TeacherDashboard;
@@ -100,6 +101,10 @@ function ctf_web_routes(Router $router): void
     $router->get('/student/groups/join', [Auth::class, RequireStudent::class], [StudentGroups::class, 'showJoin']);
     $router->post('/student/groups/join', [Auth::class, RequireStudent::class, CSRF::class], [StudentGroups::class, 'join']);
     $router->post('/student/groups/{id}/leave', [Auth::class, RequireStudent::class, CSRF::class], [StudentGroups::class, 'leave']);
+
+    // Student: challenges
+    $router->get('/student/challenges', [Auth::class, RequireStudent::class], [StudentChallenge::class, 'index']);
+    $router->get('/student/challenges/{id}', [Auth::class, RequireStudent::class], [StudentChallenge::class, 'show']);
 
     // Student: devices
     $router->get('/student/devices', [Auth::class, RequireStudent::class], [StudentDevice::class, 'index']);

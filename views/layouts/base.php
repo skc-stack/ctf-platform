@@ -28,12 +28,11 @@ $navLinks = match ($user['role'] ?? null) {
     ],
     'student' => [
         ['label' => '群組', 'href' => '/student/groups', 'icon' => 'bi-people-fill'],
-        ['label' => '題目', 'href' => '#', 'icon' => 'bi-grid-3x3-gap'],
+        ['label' => '題目', 'href' => '/student/challenges', 'icon' => 'bi-grid-3x3-gap'],
         ['label' => '我的裝置', 'href' => '/student/devices', 'icon' => 'bi-tablet'],
         ['label' => '排行榜', 'href' => '/leaderboard', 'icon' => 'bi-trophy'],
     ],
     default => [
-        ['label' => '題目', 'href' => '#', 'icon' => 'bi-grid-3x3-gap'],
         ['label' => '排行榜', 'href' => '/leaderboard', 'icon' => 'bi-trophy'],
     ],
 };
