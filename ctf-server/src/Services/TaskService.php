@@ -150,12 +150,9 @@ final class TaskService
             throw new TaskValidationException('device_inactive', '裝置已被停用或撤銷', 401);
         }
 
-        // Owner check: device.user_id must equal task.student_id.
-        if ((int)$device['user_id'] !== (int)$task['student_id']) {
-            throw new TaskValidationException('owner_mismatch', '此 Task Token 屬於另一位學生', 403);
-        }
-
         // First validate binds device; subsequent must match.
+        // Note: we do NOT check device.user_id == task.student_id here,
+        // allowing multiple students to share the same VM.
         $bindOk = $this->tasks->bindDevice((int)$task['id'], (int)$device['id']);
         if (!$bindOk) {
             throw new TaskValidationException('device_mismatch', '此 Task 已被綁定到其他裝置', 403);

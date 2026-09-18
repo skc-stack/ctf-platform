@@ -99,9 +99,8 @@ final class SubmissionService
         if ($task === null) {
             return $this->reject('task_not_found', 0);
         }
-        if ((int)$task['student_id'] !== (int)$device['user_id']) {
-            return $this->reject('not_owner', 0);
-        }
+        // Note: we do NOT check device.user_id == task.student_id here,
+        // allowing multiple students to share the same VM.
         // Make sure this task is bound to the calling device.
         if ($task['device_id'] !== null && (int)$task['device_id'] !== (int)$device['id']) {
             return $this->reject('device_mismatch', 0);

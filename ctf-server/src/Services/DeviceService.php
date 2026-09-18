@@ -46,23 +46,12 @@ final class DeviceService
             throw new \InvalidArgumentException("Cannot activate more than {$maxDevices} devices");
         }
 
-        // Check if device UUID already exists (revoke and replace? or just return existing?)
-        // Spec says: if device already exists with same UUID, return existing token
+        // Check if device UUID already exists.
+        // For shared VMs: revoke the old device so a new one can be
+        // created under the current student's account.
         $existingDevice = $this->devices->findByUuid($deviceUuid);
         if ($existingDevice !== null) {
-            if ((int)$existingDevice['user_id'] !== (int)$user['id']) {
-                throw new \InvalidArgumentException('Device already registered to another user');
-            }
-            // Return existing device token hash - we need to regenerate token though
-            // For simplicity, just update last_seen and return same token (not ideal)
-            // Actually, we need to generate a NEW token on each activation
-            // Let's just create a new device or update existing
-            $this->devices->touchLastSeen((int)$existingDevice['id'], $ip);
-            // For security, we should regenerate token on each activation
-            // But that would require storing token hash, not token
-            // Let's create a new device instead (older one becomes stale)
-            // Actually, let's just update and return "please note this is a new activation"
-            throw new \InvalidArgumentException('Device already exists for this user. Please revoke old device first or use different UUID.');
+            $this->devices->updateStatus((int)$existingDevice['id'], DeviceRepository::STATUS_REVOKED);
         }
 
         // Generate device token (cryptographically random)
