@@ -69,6 +69,7 @@ function ctf_web_routes(Router $router): void
 
     // Admin: devices
     $router->get('/admin/devices', [Auth::class, RequireAdmin::class], [AdminDeviceController::class, 'index']);
+    $router->get('/admin/devices/{id}/sync', [Auth::class, RequireAdmin::class], [AdminDeviceController::class, 'syncStatus']);
     $router->post('/admin/devices/{id}/revoke', [Auth::class, RequireAdmin::class, CSRF::class], [AdminDeviceController::class, 'revoke']);
     $router->post('/admin/devices/codes/{id}', [Auth::class, RequireAdmin::class, CSRF::class], [AdminDeviceController::class, 'deleteActivationCode']);
 
@@ -120,6 +121,7 @@ function ctf_web_routes(Router $router): void
     // Device: task validate + complete
     $router->post('/api/v1/device/task/validate', [DeviceAuth::class, RateLimitTaskValidate::class], [TaskController::class, 'validateApi']);
     $router->post('/api/v1/device/task/complete', [DeviceAuth::class, RateLimitFlagSubmit::class], [SubmissionController::class, 'completeFromDevice']);
+    $router->post('/api/v1/device/sync-report', [DeviceAuth::class], [DeviceController::class, 'syncReport']);
 
     // Leaderboard (public — but visible to anyone)
     $router->get('/leaderboard', [], [HomeController::class, 'leaderboard']);

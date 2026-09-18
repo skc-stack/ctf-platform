@@ -36,6 +36,28 @@ final class DeviceController extends BaseController
         ]);
     }
 
+    /**
+     * GET /admin/devices/{id}/sync
+     * View synced challenges for a device (AJAX).
+     */
+    public function syncStatus(Request $req, string $id): Response
+    {
+        $deviceId = (int)$id;
+        $device = $this->devices->findById($deviceId);
+        if (!$device) {
+            return $this->jsonError('Device not found', 404);
+        }
+        $syncedChallenges = $this->devices->getSyncedChallenges($deviceId);
+        return $this->jsonOk([
+            'device' => [
+                'id' => $device['id'],
+                'uuid' => $device['uuid'],
+                'name' => $device['name'],
+            ],
+            'challenges' => $syncedChallenges,
+        ]);
+    }
+
     public function revoke(Request $req, string $id): Response
     {
         $deviceId = (int)$id;

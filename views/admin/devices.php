@@ -26,7 +26,7 @@ $activation_codes = $activation_codes ?? [];
                     <th>狀態</th>
                     <th>Agent 版本</th>
                     <th>在線/持續</th>
-                    <th>目前題目</th>
+                    <th>已同步</th>
                     <th>操作</th>
                 </tr>
             </thead>
@@ -49,7 +49,6 @@ $activation_codes = $activation_codes ?? [];
                         <td class="ctf-mono"><?= htmlspecialchars($d['agent_version'] ?? '-', ENT_QUOTES, 'UTF-8') ?></td>
                         <td class="ctf-mono"><?= htmlspecialchars($d['last_seen_at'] ?? '從未', ENT_QUOTES, 'UTF-8') ?>
                             <?php
-                            // Calculate online duration
                             if (!empty($d['last_seen_at'])) {
                                 $lastSeen = strtotime($d['last_seen_at']);
                                 $now = time();
@@ -68,11 +67,19 @@ $activation_codes = $activation_codes ?? [];
                             ?>
                         </td>
                         <td>
-                            <?php if (!empty($d['task_uuid'])): ?>
-                                <span class="ctf-tag ctf-tag-success"><?= htmlspecialchars($d['challenge_title'] ?? $d['task_uuid'], ENT_QUOTES, 'UTF-8') ?></span>
-                                <br><small class="ctf-muted"><?= htmlspecialchars(date('H:i', strtotime($d['task_started_at']))) ?> ~ <?= htmlspecialchars(date('H:i', strtotime($d['task_expires_at']))) ?></small>
+                            <?php
+                            $syncCount = (int)($d['synced_challenges_count'] ?? 0);
+                            $lastSync = $d['last_synced_at'] ?? null;
+                            ?>
+                            <?php if ($syncCount > 0): ?>
+                                <span class="ctf-tag ctf-tag-success"><?= $syncCount ?> 題</span>
+                                <?php if ($lastSync): $syncTime = date('m/d H:i', strtotime($lastSync)); ?>
+                                <br><small class="ctf-muted"><?= $syncTime ?></small>
+                                <?php endif; ?>
+                                <br><a href="#" class="ctf-link ctf-link-sm" onclick="toggleSyncList(this, <?= (int)$d['id'] ?>); return false;">[詳情]</a>
+                                <div id="sync-list-<?= (int)$d['id'] ?>" class="sync-list" style="display:none;margin-top:8px"></div>
                             <?php else: ?>
-                                <span class="ctf-muted">—</span>
+                                <span class="ctf-muted">未同步</span>
                             <?php endif; ?>
                         </td>
                         <td>
@@ -146,3 +153,53 @@ $activation_codes = $activation_codes ?? [];
         </table>
     <?php endif; ?>
 </section>
+
+<script>
+function toggleSyncList(link, deviceId) {
+    var div = document.getElementById('sync-list-' + deviceId);
+    if (div.style.display === 'none') {
+        fetch('/admin/devices/' + deviceId + '/sync')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.success && data.challenges) {
+                    var html = '<table class="ctf-table" style="font-size:12px"><thead><tr><th>題目</th><th>版本</th><th>SHA-256</th><th>同步時間</th></tr></thead><tbody>';
+                    if (data.challenges.length === 0) {
+                        html += '<tr><td colspan="4" class="ctf-muted">尚無同步資料</td></tr>';
+                    } else {
+                        data.challenges.forEach(function(ch) {
+                            html += '<tr>';
+                            html += '<td>' + (ch.challenge_title || ch.challenge_id) + '</td>';
+                            html += '<td class="ctf-mono">v' + ch.challenge_version + '</td>';
+                            html += '<td class="ctf-mono" style="font-size:10px">' + (ch.sha256 || '-').substring(0, 12) + '...</td>';
+                            html += '<td class="ctf-mono">' + formatDate(ch.synced_at) + '</td>';
+                            html += '</tr>';
+                        });
+                    }
+                    html += '</tbody></table>';
+                    div.innerHTML = html;
+                } else {
+                    div.innerHTML = '<span class="ctf-muted">載入失敗</span>';
+                }
+            })
+            .catch(function() {
+                div.innerHTML = '<span class="ctf-muted">載入失敗</span>';
+            });
+        div.style.display = 'block';
+        link.textContent = '[隱藏]';
+    } else {
+        div.style.display = 'none';
+        link.textContent = '[詳情]';
+    }
+    return false;
+}
+
+function formatDate(dateStr) {
+    if (!dateStr) return '-';
+    var d = new Date(dateStr);
+    var m = ('0' + (d.getMonth() + 1)).slice(-2);
+    var day = ('0' + d.getDate()).slice(-2);
+    var h = ('0' + d.getHours()).slice(-2);
+    var min = ('0' + d.getMinutes()).slice(-2);
+    return m + '/' + day + ' ' + h + ':' + min;
+}
+</script>

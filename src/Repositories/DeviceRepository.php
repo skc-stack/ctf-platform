@@ -146,7 +146,9 @@ final class DeviceRepository
                     ts.expires_at AS task_expires_at,
                     ts.status AS task_status,
                     c.title AS challenge_title,
-                    c.slug AS challenge_slug
+                    c.slug AS challenge_slug,
+                    (SELECT COUNT(*) FROM device_sync_status WHERE device_id = d.id) AS synced_challenges_count,
+                    (SELECT MAX(synced_at) FROM device_sync_status WHERE device_id = d.id) AS last_synced_at
              FROM devices d
              JOIN users u ON u.id = d.user_id
              LEFT JOIN task_sessions ts ON ts.device_id = d.id AND ts.status = "active"
@@ -165,6 +167,22 @@ final class DeviceRepository
             'page'    => $page,
             'perPage' => $perPage,
         ];
+    }
+
+    /**
+     * Get synced challenges for a device.
+     * @return array<int,array<string,mixed>>
+     */
+    public function getSyncedChallenges(int $deviceId): array
+    {
+        return Connection::fetchAll(
+            'SELECT ds.*, c.title AS challenge_title, c.slug AS challenge_slug
+             FROM device_sync_status ds
+             LEFT JOIN challenges c ON c.challenge_id = ds.challenge_id
+             WHERE ds.device_id = :did
+             ORDER BY ds.synced_at DESC',
+            [':did' => $deviceId]
+        );
     }
 
     /**
