@@ -46,11 +46,11 @@ final class DeviceService
             throw new \InvalidArgumentException("Cannot activate more than {$maxDevices} devices");
         }
 
-        // Check if device UUID already exists.
-        // For shared VMs: revoke the old device so a new one can be
-        // created under the current student's account.
+        // Check if device UUID already exists under a DIFFERENT user
+        // If so, revoke the old device record so this new user can claim the VM
         $existingDevice = $this->devices->findByUuid($deviceUuid);
-        if ($existingDevice !== null) {
+        if ($existingDevice !== null && (int)$existingDevice['user_id'] !== (int)$user['id']) {
+            // Revoke old device so new user can claim this VM
             $this->devices->updateStatus((int)$existingDevice['id'], DeviceRepository::STATUS_REVOKED);
         }
 
