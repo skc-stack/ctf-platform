@@ -244,8 +244,10 @@ final class ChallengeService
         $baseDir = rtrim((string)Config::get('STORAGE_CHALLENGE_PATH', 'storage/challenges'), '/\\');
         $challengeDir = $baseDir . '/' . $slug;
         if (is_file($challengeDir . '/setup.sql')) {
+            // Database name must be [A-Za-z0-9_] — replace hyphens with underscores
+            $dbName = str_replace('-', '_', $slug);
             $manifest['database'] = [
-                'name' => $slug,
+                'name' => $dbName,
                 'setup_sql' => 'setup.sql',
             ];
         }
