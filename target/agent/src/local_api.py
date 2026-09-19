@@ -31,12 +31,9 @@ from .syncer import Syncer
 log = logging.getLogger("ctf-agent.local_api")
 
 
-def _write_dynamic_flag(challenge_id: str, flag: str) -> None:
+def _write_dynamic_flag(challenge_id: str, flag: str, challenge_root: str = "/srv/ctf/challenges") -> None:
     """Write the dynamic flag to the challenge directory for the entrypoint page to read."""
     try:
-        # Get the challenge root from config
-        db = LocalDBConfig.load_from_file()
-        challenge_root = db.config.get("challenge_root", "/srv/ctf/challenges")
         flag_file = Path(challenge_root) / challenge_id / ".current_flag"
         flag_file.parent.mkdir(parents=True, exist_ok=True)
         flag_file.write_text(flag + "\n")
@@ -146,7 +143,7 @@ def create_app(config: Optional[Config] = None,
             # Write the dynamic flag to the challenge directory
             # so the entrypoint page can display it
             if flag and challenge_id:
-                _write_dynamic_flag(challenge_id, flag)
+                _write_dynamic_flag(challenge_id, flag, cfg.challenge_root)
 
             return jsonify({
                 "ok": True,

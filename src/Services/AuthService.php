@@ -29,7 +29,6 @@ final class AuthService
      *   - username not found
      *   - password does not match
      *   - status != 'active' (pending / disabled)
-     *   - email_verified_at IS NULL (Phase 4: must verify Email before login)
      */
     public function attemptLogin(string $username, string $password): ?array
     {
@@ -43,9 +42,6 @@ final class AuthService
             return null;
         }
         if ($user['status'] !== UserRepository::STATUS_ACTIVE) {
-            return null;
-        }
-        if (empty($user['email_verified_at'])) {
             return null;
         }
         return $user;
@@ -134,7 +130,7 @@ final class AuthService
                 'password' => $password,
                 'display_name' => $displayName,
                 'role' => UserRepository::ROLE_STUDENT,
-                'status' => UserRepository::STATUS_ACTIVE,
+                'status' => UserRepository::STATUS_PENDING,
             ]);
             AuditLog::log('register_student', $id, 'user', (string)$id, [
                 'username' => $username,

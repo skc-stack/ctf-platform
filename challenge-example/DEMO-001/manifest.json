@@ -5,12 +5,11 @@
     "type": "web",
     "difficulty": "easy",
     "title": "Demo: Hidden in HTML Comments",
-    "description": "Classic intro challenge — the flag is hidden in an HTML comment on the main page. Read the source.",
+    "description": "Classic intro challenge — the flag is shown on the entrypoint page. Read the source.",
     "points": 200,
     "entrypoint": "/challenge/DEMO-001/",
     "verification": {
-        "type": "flag",
-        "flag_static": "flag{read_the_source}"
+        "type": "automatic"
     },
     "database": {
         "name": "ctf_demo_001",
@@ -18,6 +17,6 @@
     },
     "reset": {
         "drop_and_recreate_db": true,
-        "restore_files": ["web/"]
+        "restore_files": ["web/", "index.php"]
     }
 }

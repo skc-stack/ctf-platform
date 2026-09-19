@@ -77,9 +77,6 @@ final class GroupService
         if (!$teacher || $teacher['role'] !== UserRepository::ROLE_TEACHER) {
             throw new \InvalidArgumentException('只有老師可以建立群組');
         }
-        if (empty($teacher['email_verified_at'])) {
-            throw new \InvalidArgumentException('請先完成 Email 驗證');
-        }
 
         $uuid = sprintf(
             '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
@@ -125,9 +122,6 @@ final class GroupService
         $student = $this->users->findById($studentId);
         if (!$student || $student['role'] !== UserRepository::ROLE_STUDENT) {
             throw new \InvalidArgumentException('只有學生可以加入群組');
-        }
-        if (empty($student['email_verified_at'])) {
-            throw new \InvalidArgumentException('請先完成 Email 驗證');
         }
 
         $group = $this->groups->findByJoinCode($code);

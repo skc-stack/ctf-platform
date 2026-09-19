@@ -91,11 +91,18 @@ final class TaskController extends BaseController
         $token = (string)($req->post['task_token'] ?? $req->json()['task_token'] ?? '');
         try {
             $result = $this->service->validate($token, $device, $req);
+            // Compute the dynamic flag for this student + challenge + task
+            $flag = \CTF\Server\Security\FlagGenerator::compute(
+                (int)$result['task']['student_id'],
+                (string)$result['challenge']['uuid'],
+                (string)$result['task']['uuid']
+            );
             return $this->jsonOk([
                 'task_id' => (int)$result['task']['id'],
                 'task_uuid' => (string)$result['task']['uuid'],
                 'challenge_id' => (int)$result['challenge']['id'],
                 'challenge_uuid' => (string)$result['challenge']['uuid'],
+                'flag' => $flag,
                 'entrypoint' => '/challenge/' . (string)$result['challenge']['slug'] . '/',
                 'challenge_version' => (int)$result['challenge']['version'],
                 'expires_at' => (string)$result['task']['expires_at'],

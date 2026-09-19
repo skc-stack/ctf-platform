@@ -4,7 +4,7 @@ use CTF\Server\Services\AuthService;
 use CTF\Server\Database\Connection;
 
 // Check admin row
-$row = Connection::fetchOne('SELECT id, username, status, email_verified_at FROM users WHERE username = ?', ['admin']);
+$row = Connection::fetchOne('SELECT id, username, status FROM users WHERE username = ?', ['admin']);
 echo "Admin row:\n";
 print_r($row);
 echo "\n";
@@ -18,7 +18,7 @@ if ($user) {
     echo "Login FAILED.\n";
     // Debug why
     $dbg = Connection::fetchOne(
-        'SELECT username, status, email_verified_at, password_hash FROM users WHERE username = ?',
+        'SELECT username, status, password_hash FROM users WHERE username = ?',
         ['admin']
     );
     echo "Debug row:\n";

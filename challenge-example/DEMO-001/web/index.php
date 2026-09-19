@@ -2,25 +2,18 @@
 /**
  * DEMO-001 — Hidden in HTML Comments
  *
- * The flag is in an HTML comment below. Read the source (Ctrl+U / View Source)
- * to find it. In real challenges, this kind of leak is rare — most flags
- * require actual exploitation (SQLi, XSS, SSRF, etc.).
- *
- * Note for student: this page uses a *static* flag because verification_type
- * is "flag" with flag_static in manifest.json. The Server still wraps this
- * in an HMAC when computing the expected flag, so just pasting the static
- * value won't match — the student's flag is computed from
- * (student_id, challenge_uuid, task_uuid) and the FLAG_MASTER_SECRET on
- * the Server.
- *
- * So: this page is a *red herring*. The real challenge flow is:
- *   1. Student starts a task for DEMO-001 in their dashboard.
- *   2. Server gives them a task UUID.
- *   3. Server computes expected flag = HMAC(student + challenge + task, MASTER).
- *   4. Student pastes that expected flag back into the dashboard's submit form.
- *
- * This page is purely so the student has something visible at the entrypoint.
+ * Dynamic Flag Mode:
+ * The Agent writes the current task's dynamic flag to /srv/ctf/challenges/DEMO-001/.current_flag
+ * This page reads and displays that flag.
  */
+$challenge_root = '/srv/ctf/challenges';
+$challenge_id = 'DEMO-001';
+$flag_file = $challenge_root . '/' . $challenge_id . '/.current_flag';
+
+$dynamic_flag = '';
+if (file_exists($flag_file)) {
+    $dynamic_flag = trim(file_get_contents($flag_file));
+}
 ?>
 <!doctype html>
 <html lang="zh-Hant">
@@ -32,35 +25,35 @@
         h1 { color: #bf6f3a; }
         code { background: #161b22; padding: 2px 6px; border: 1px solid #2a3138; color: #f7c884; }
         .hint { background: #161b22; padding: 12px; border-left: 3px solid #bf6f3a; }
+        .flag-box { background: #161b22; padding: 16px; border: 2px solid #bf6f3a; margin: 20px 0; text-align: center; }
+        .flag-box .flag { font-size: 24px; color: #f7c884; letter-spacing: 2px; }
+        .flag-box .label { color: #888; margin-bottom: 8px; }
     </style>
 </head>
 <body>
     <h1>DEMO-001</h1>
-    <p>歡迎。這是 CTF LAB 的入門題。Flag 就藏在這個頁面裡的某個地方。</p>
+    <p>歡迎。這是 CTF LAB 的入門題。</p>
 
-    <!--
-        Hint to the reader: this challenge is intentionally trivial — it teaches
-        you to read HTML source. The "flag" text you find here is a static comment,
-        not the actual flag the Server will accept. The real flag is computed by
-        the Server when you start a task, based on (student_id, challenge_uuid,
-        task_uuid) and a master secret. You'll need to submit that computed flag
-        from your dashboard.
-
-        For this demo, the static value in manifest.json's flag_static is
-        "flag{read_the_source}" — but only the HMAC'd version counts.
-    -->
-
-    <div class="hint">
-        <strong>提示：</strong> 按 <code>Ctrl+U</code>（或瀏覽器 → 檢視網頁原始碼）可以看到這個頁面的 HTML 內容。
-        Flag 通常藏在「HTML 註解」裡或「JS 變數」裡或「看不見的 element」裡。
+    <?php if ($dynamic_flag): ?>
+    <div class="flag-box">
+        <div class="label">你的 Flag（動態計算）</div>
+        <div class="flag"><?= htmlspecialchars($dynamic_flag, ENT_QUOTES, 'UTF-8') ?></div>
     </div>
+    <?php else: ?>
+    <div class="hint">
+        <strong>提示：</strong> 這個頁面需要由 Agent 提供動態 Flag。
+        請先在 Target Portal 貼上 Task Token 來啟動挑戰。
+    </div>
+    <?php endif; ?>
 
-    <h2>你的下一步</h2>
+    <h2>如何解題</h2>
     <ol>
+        <li>複製上面的 Flag</li>
         <li>回到 CTF LAB 學生儀表板</li>
-        <li>啟動 DEMO-001 的 Task</li>
-        <li>把 Server 給你的 Task Token 貼到 Target Portal</li>
-        <li>解完題後回 Server 學生儀表板「繳交 Flag」</li>
+        <li>在「繳交 Flag」表單貼上並送出</li>
     </ol>
+
+    <h2>關於這個挑戰</h2>
+    <p>這是一個入門題。Flag 就在這個頁面中。試著找到它！</p>
 </body>
 </html>
