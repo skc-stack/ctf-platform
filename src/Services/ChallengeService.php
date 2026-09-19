@@ -229,7 +229,7 @@ final class ChallengeService
                     'script' => 'check.sh',
                 ],
             ],
-            'database' => null,
+            'database' => (object)[],
             'reset' => [
                 'drop_and_recreate_db' => false,
                 'restore_files' => ['web/'],
