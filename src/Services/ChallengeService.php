@@ -229,7 +229,6 @@ final class ChallengeService
                     'script' => 'check.sh',
                 ],
             ],
-            'database' => (object)[],
             'reset' => [
                 'drop_and_recreate_db' => false,
                 'restore_files' => ['web/'],
@@ -241,7 +240,15 @@ final class ChallengeService
             $manifest = array_merge($manifest, $metadata);
         }
 
+        // Add database block only if setup.sql exists
         $baseDir = rtrim((string)Config::get('STORAGE_CHALLENGE_PATH', 'storage/challenges'), '/\\');
+        $challengeDir = $baseDir . '/' . $slug;
+        if (is_file($challengeDir . '/setup.sql')) {
+            $manifest['database'] = [
+                'name' => $slug,
+                'setup_sql' => 'setup.sql',
+            ];
+        }
         $manifestPath = $baseDir . '/' . $slug . '/manifest.json';
 
         $json = json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
