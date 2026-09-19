@@ -224,8 +224,10 @@ final class ChallengeService
             'points' => (int)($challenge['points'] ?? 100),
             'entrypoint' => '/challenge/' . $slug . '/',
             'verification' => [
-                'type' => 'flag',
-                'flag_static' => '',
+                'type' => 'automatic',
+                'automatic' => [
+                    'script' => 'check.sh',
+                ],
             ],
             'database' => null,
             'reset' => [
