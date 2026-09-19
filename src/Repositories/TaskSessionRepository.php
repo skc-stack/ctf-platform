@@ -18,6 +18,13 @@ final class TaskSessionRepository
     public const STATUS_EXPIRED   = 'expired';
     public const STATUS_CANCELLED = 'cancelled';
 
+    // Task progress status (displayed to student)
+    public const TASK_STATUS_NOT_COPIED   = 'token_not_copied';    // 還沒複製Task Token
+    public const TASK_STATUS_COPIED      = 'token_copied';         // 已複製Task Token
+    public const TASK_STATUS_VALIDATED   = 'token_validated';     // 已驗證Task Token
+    public const TASK_STATUS_STARTED     = 'challenge_started';    // 開始解題
+    public const TASK_STATUS_COMPLETED   = 'completed';            // 完成解題
+
     /** @return array<string,mixed>|null */
     public function findById(int $id): ?array
     {
@@ -63,15 +70,16 @@ final class TaskSessionRepository
         }
         Connection::run(
             'INSERT INTO task_sessions
-                (uuid, student_id, challenge_id, token_hash, status, expires_at)
+                (uuid, student_id, challenge_id, token_hash, status, task_status, expires_at)
              VALUES
-                (:u, :s, :c, :h, :st, :e)',
+                (:u, :s, :c, :h, :st, :ts, :e)',
             [
                 ':u'  => (string)$fields['uuid'],
                 ':s'  => (int)$fields['student_id'],
                 ':c'  => (int)$fields['challenge_id'],
                 ':h'  => (string)$fields['token_hash'],
                 ':st' => self::STATUS_ACTIVE,
+                ':ts' => self::TASK_STATUS_NOT_COPIED,
                 ':e'  => (string)$fields['expires_at'],
             ]
         );
@@ -103,9 +111,9 @@ final class TaskSessionRepository
     {
         $affected = Connection::run(
             'UPDATE task_sessions
-             SET status = :s, completed_at = NOW()
+             SET status = :s, task_status = :ts, completed_at = NOW()
              WHERE id = :id AND status = :active',
-            [':s' => self::STATUS_COMPLETED, ':id' => $taskId, ':active' => self::STATUS_ACTIVE]
+            [':s' => self::STATUS_COMPLETED, ':ts' => self::TASK_STATUS_COMPLETED, ':id' => $taskId, ':active' => self::STATUS_ACTIVE]
         )->rowCount();
         return $affected > 0;
     }
@@ -117,6 +125,28 @@ final class TaskSessionRepository
              SET status = :s, completed_at = NOW()
              WHERE id = :id AND status = :active',
             [':s' => self::STATUS_CANCELLED, ':id' => $taskId, ':active' => self::STATUS_ACTIVE]
+        )->rowCount();
+        return $affected > 0;
+    }
+
+    /**
+     * Update task progress status.
+     */
+    public function updateTaskStatus(int $taskId, string $status): bool
+    {
+        $allowed = [
+            self::TASK_STATUS_NOT_COPIED,
+            self::TASK_STATUS_COPIED,
+            self::TASK_STATUS_VALIDATED,
+            self::TASK_STATUS_STARTED,
+            self::TASK_STATUS_COMPLETED,
+        ];
+        if (!in_array($status, $allowed, true)) {
+            return false;
+        }
+        $affected = Connection::run(
+            'UPDATE task_sessions SET task_status = :ts WHERE id = :id AND status = :active',
+            [':ts' => $status, ':id' => $taskId, ':active' => self::STATUS_ACTIVE]
         )->rowCount();
         return $affected > 0;
     }

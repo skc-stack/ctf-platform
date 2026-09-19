@@ -116,6 +116,8 @@ function ctf_web_routes(Router $router): void
     $router->get('/student/task/{id}', [Auth::class, RequireStudent::class], [TaskController::class, 'show']);
     $router->post('/student/task/{id}/cancel', [Auth::class, RequireStudent::class, CSRF::class], [TaskController::class, 'cancel']);
     $router->post('/api/v1/student/task/start', [Auth::class, RequireStudent::class, CSRF::class], [TaskController::class, 'start']);
+    $router->get('/api/v1/student/task/{id}/status', [Auth::class, RequireStudent::class], [TaskController::class, 'statusApi']);
+    $router->post('/api/v1/student/task/{id}/status', [Auth::class, RequireStudent::class], [TaskController::class, 'updateStatusApi']);
     $router->post('/api/v1/student/submit', [Auth::class, RequireStudent::class, CSRF::class, RateLimitFlagSubmit::class], [SubmissionController::class, 'submitFromBrowser']);
 
     // Device: task validate + complete

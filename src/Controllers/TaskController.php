@@ -91,6 +91,8 @@ final class TaskController extends BaseController
         $token = (string)($req->post['task_token'] ?? $req->json()['task_token'] ?? '');
         try {
             $result = $this->service->validate($token, $device, $req);
+            // Update task status to 'validated' when device validates token
+            $this->tasks->updateTaskStatus((int)$result['task']['id'], TaskSessionRepository::TASK_STATUS_VALIDATED);
             // Compute the dynamic flag for this student + challenge + task
             $flag = \CTF\Server\Security\FlagGenerator::compute(
                 (int)$result['task']['student_id'],
@@ -110,5 +112,44 @@ final class TaskController extends BaseController
         } catch (\CTF\Server\Services\TaskValidationException $e) {
             return $this->jsonError($e->getMessage(), $e->httpStatus, ['code' => $e->errorCode]);
         }
+    }
+
+    /**
+     * GET /api/v1/student/task/{id}/status
+     * Returns current task status for polling.
+     */
+    public function statusApi(Request $req, string $id): Response
+    {
+        $studentId = (int)$_SESSION['user']['id'];
+        $task = $this->tasks->findById((int)$id);
+        if (!$task || (int)$task['student_id'] !== $studentId) {
+            return $this->jsonError('Task not found', 404);
+        }
+        return $this->jsonOk([
+            'task_id' => (int)$task['id'],
+            'task_status' => (string)($task['task_status'] ?? 'token_not_copied'),
+            'status' => (string)$task['status'],
+            'expires_at' => (string)$task['expires_at'],
+            'challenge_slug' => (string)$task['challenge_slug'],
+        ]);
+    }
+
+    /**
+     * POST /api/v1/student/task/{id}/status
+     * Update task status (copy token, start challenge).
+     */
+    public function updateStatusApi(Request $req, string $id): Response
+    {
+        $studentId = (int)$_SESSION['user']['id'];
+        $task = $this->tasks->findById((int)$id);
+        if (!$task || (int)$task['student_id'] !== $studentId) {
+            return $this->jsonError('Task not found', 404);
+        }
+        $newStatus = $req->json()['task_status'] ?? '';
+        $ok = $this->tasks->updateTaskStatus((int)$id, $newStatus);
+        if (!$ok) {
+            return $this->jsonError('Invalid status or task not active', 400);
+        }
+        return $this->jsonOk(['task_status' => $newStatus]);
     }
 }
