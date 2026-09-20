@@ -52,19 +52,15 @@ $isCompleted = $taskStatus === 'completed';
             </div>
             <div class="step <?= in_array($taskStatus, ['token_copied','token_validated','challenge_started','completed']) ? 'done' : '' ?>" id="step2">
                 <span class="step-icon"><i class="bi bi-2-circle-fill"></i></span>
-                <span class="step-text">在 Target Portal 貼上 Token</span>
+                <span class="step-text">在 Target Portal 貼上 Token 驗證成功</span>
             </div>
             <div class="step <?= in_array($taskStatus, ['token_validated','challenge_started','completed']) ? 'done' : '' ?>" id="step3">
                 <span class="step-icon"><i class="bi bi-3-circle-fill"></i></span>
-                <span class="step-text">驗證成功，系統建立動態 Flag</span>
+                <span class="step-text">系統建立動態 Flag，開始解題</span>
             </div>
-            <div class="step <?= in_array($taskStatus, ['challenge_started','completed']) ? 'done' : '' ?>" id="step4">
+            <div class="step <?= $taskStatus === 'completed' ? 'done' : '' ?>" id="step4">
                 <span class="step-icon"><i class="bi bi-4-circle-fill"></i></span>
-                <span class="step-text">在靶機上解題</span>
-            </div>
-            <div class="step <?= $taskStatus === 'completed' ? 'done' : '' ?>" id="step5">
-                <span class="step-icon"><i class="bi bi-5-circle-fill"></i></span>
-                <span class="step-text">提交 Flag 完成挑戰</span>
+                <span class="step-text">解題成功</span>
             </div>
         </div>
     </div>
@@ -207,11 +203,11 @@ function updateProgressUI(status) {
         'token_not_copied': 0,
         'token_copied': 1,
         'token_validated': 2,
-        'challenge_started': 3,
-        'completed': 4
+        'challenge_started': 2,
+        'completed': 3
     };
     const currentStep = steps[status] ?? 0;
-    const stepElements = ['step1','step2','step3','step4','step5'];
+    const stepElements = ['step1','step2','step3','step4'];
     stepElements.forEach((id, idx) => {
         const el = document.getElementById(id);
         if (idx < currentStep) {
@@ -226,9 +222,9 @@ function updateProgressUI(status) {
     const labels = {
         'token_not_copied': '還沒複製Task Token',
         'token_copied': '已複製Task Token',
-        'token_validated': '已驗證Task Token',
-        'challenge_started': '開始解題',
-        'completed': '完成解題'
+        'token_validated': '在 Target Portal 貼上 Token 驗證成功',
+        'challenge_started': '系統建立動態 Flag，開始解題',
+        'completed': '解題成功'
     };
     badge.textContent = labels[status] || status;
 }
