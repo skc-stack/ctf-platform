@@ -14,6 +14,7 @@ $challengeTitle = $task['challenge_title'] ?? '未知題目';
 $challengeSlug = $task['challenge_slug'] ?? '';
 $challengeVersion = (int)($task['challenge_version'] ?? 0);
 $entrypoint = '/challenge/' . ltrim($challengeSlug, '/') . '/';
+$targetIp = $task['target_ip'] ?? '';
 
 // Status mapping
 $statusLabels = [
@@ -116,16 +117,17 @@ $isCompleted = $taskStatus === 'completed';
             <div class="ctf-stat-value ctf-stat-value-cyan">v<?= $challengeVersion ?></div>
         </div>
         <div class="ctf-stat-card">
-            <div class="ctf-stat-label"><i class="bi bi-link-45deg"></i> 挑戰入口</div>
-            <div class="ctf-mono" style="font-size:13px;padding-top:14px">
-                <code style="word-break:break-all"><?= htmlspecialchars($entrypoint, ENT_QUOTES, 'UTF-8') ?></code>
+            <div class="ctf-stat-label"><i class="bi bi-pc"></i> 靶場入口</div>
+            <?php if ($targetIp): ?>
+            <div class="ctf-mono" style="font-size:15px;padding-top:14px;color:var(--drafting-cyan)">
+                http://<?= htmlspecialchars($targetIp, ENT_QUOTES, 'UTF-8') ?>
             </div>
-            <?php if ($challengeSlug && $status === 'active' && !$expired && !$isCompleted): ?>
-            <div style="margin-top:12px">
-                <button type="button" class="ctf-btn ctf-btn-primary" id="openChallengeBtn"
-                    onclick="openChallenge()">
-                    <i class="bi bi-box-arrow-up-right"></i> 開啟題目
-                </button>
+            <div style="margin-top:10px;font-size:13px;color:#8b969e">
+                請在瀏覽器開啟此網址，登入後貼上 Task Token 進入靶場
+            </div>
+            <?php else: ?>
+            <div style="margin-top:10px;font-size:13px;color:#bf6f3a">
+                <i class="bi bi-exclamation-triangle"></i> 尚未綁定裝置。請先在靶場 Portal 貼上 Task Token。
             </div>
             <?php endif; ?>
         </div>
