@@ -137,6 +137,8 @@ final class TaskController extends BaseController
         if ($result === null) {
             return $this->jsonError('Task not found or not active', 404);
         }
+        // Also update task status to 'challenge_started'
+        $this->tasks->updateTaskStatus($taskId, TaskSessionRepository::TASK_STATUS_STARTED);
         return $this->jsonOk($result);
     }
 
