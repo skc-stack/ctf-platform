@@ -33,11 +33,9 @@ final class TaskSessionRepository
                     c.title AS challenge_title,
                     c.slug AS challenge_slug,
                     c.version AS challenge_version,
-                    c.uuid AS challenge_uuid,
-                    d.last_ip AS target_ip
+                    c.uuid AS challenge_uuid
              FROM task_sessions t
              JOIN challenges c ON c.id = t.challenge_id
-             LEFT JOIN devices d ON d.id = t.device_id
              WHERE t.id = :id',
             [':id' => $id]
         );
