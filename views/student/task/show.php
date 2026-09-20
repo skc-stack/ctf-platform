@@ -241,6 +241,6 @@ async function pollStatus() {
     }
 }
 
-// Start polling every 3 seconds
-setInterval(pollStatus, 3000);
+// Start polling every 5 seconds
+setInterval(pollStatus, 5000);
 </script>
