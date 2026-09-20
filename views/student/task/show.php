@@ -185,11 +185,16 @@ async function copyToken() {
         await navigator.clipboard.writeText(taskToken);
         document.getElementById('copyFeedback').style.display = 'block';
         // Update status to copied
-        await fetch(`/api/v1/student/task/${taskId}/status`, {
+        const resp = await fetch(`/api/v1/student/task/${taskId}/status`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
             body: JSON.stringify({ task_status: 'token_copied' })
         });
+        if (resp.status === 401) {
+            alert('登入已過期，將導向首頁');
+            window.location.href = '/';
+            return;
+        }
         updateProgressUI('token_copied');
     } catch (e) {
         alert('複製失敗：' + e);
@@ -232,9 +237,17 @@ function updateProgressUI(status) {
 async function pollStatus() {
     try {
         const resp = await fetch(`/api/v1/student/task/${taskId}/status`);
+        if (resp.status === 401) {
+            alert('登入已過期，將導向首頁');
+            window.location.href = '/';
+            return;
+        }
         const data = await resp.json();
         if (data.success) {
             updateProgressUI(data.data.task_status);
+        } else if (data.error && data.error.toLowerCase().includes('unauthorized')) {
+            alert('登入已過期，將導向首頁');
+            window.location.href = '/';
         }
     } catch (e) {
         console.error('Poll error:', e);
