@@ -105,13 +105,39 @@ final class TaskController extends BaseController
                 'challenge_id' => (int)$result['challenge']['id'],
                 'challenge_uuid' => (string)$result['challenge']['uuid'],
                 'flag' => $flag,
-                'entrypoint' => '/challenge/' . (string)$result['challenge']['slug'] . '/',
+                'entrypoint' => '/challenge/start/' . (string)$result['challenge']['slug'] . '/?task_id=' . (int)$result['task']['id'],
                 'challenge_version' => (int)$result['challenge']['version'],
                 'expires_at' => (string)$result['task']['expires_at'],
             ]);
         } catch (\CTF\Server\Services\TaskValidationException $e) {
             return $this->jsonError($e->getMessage(), $e->httpStatus, ['code' => $e->errorCode]);
         }
+    }
+
+    /**
+     * POST /api/v1/device/challenge/start
+     * Called by Target Portal when student enters a challenge page.
+     * Records cumulative solve time for the task.
+     *
+     * Body: { task_id: int }
+     * Returns: { challenge_time_seconds: int, challenge_started_at: string }
+     */
+    public function startChallengeApi(Request $req): Response
+    {
+        $device = $req->device ?? null;
+        if ($device === null) {
+            return $this->jsonError('Device not authenticated', 401);
+        }
+        $data = $req->isJson() ? $req->json() : $req->post;
+        $taskId = (int)($data['task_id'] ?? 0);
+        if ($taskId === 0) {
+            return $this->jsonError('task_id is required', 400);
+        }
+        $result = $this->tasks->startChallenge($taskId);
+        if ($result === null) {
+            return $this->jsonError('Task not found or not active', 404);
+        }
+        return $this->jsonOk($result);
     }
 
     /**

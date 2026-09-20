@@ -50,6 +50,8 @@ $router->post('/sync', [], [PortalController::class, 'doSync']);
 $router->get('/task', [], [PortalController::class, 'showTask']);
 $router->post('/task', [], [PortalController::class, 'doTask']);
 $router->post('/reset', [], [PortalController::class, 'doReset']);
+// Challenge entrypoint — record start time then redirect to challenge
+$router->get('/challenge/start/{slug}', [], [PortalController::class, 'challengeStart']);
 
 $result = $router->dispatch($req);
 

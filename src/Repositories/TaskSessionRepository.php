@@ -165,6 +165,72 @@ final class TaskSessionRepository
     }
 
     /**
+     * Record that student has started solving the challenge.
+     * If a previous session exists (challenge_started_at is set), accumulate that time.
+     * Then set new challenge_started_at = NOW().
+     *
+     * @return array{challenge_time_seconds: int, challenge_started_at: string}|null
+     */
+    public function startChallenge(int $taskId): ?array
+    {
+        $task = $this->findById($taskId);
+        if ($task === null) {
+            return null;
+        }
+
+        $previousStartedAt = $task['challenge_started_at'] ?? null;
+        $existingTime = (int)($task['challenge_time_seconds'] ?? 0);
+        $newTotal = $existingTime;
+
+        if ($previousStartedAt !== null) {
+            // Accumulate previous session time
+            $elapsed = (int)((time() - strtotime($previousStartedAt)));
+            if ($elapsed > 0) {
+                $newTotal = $existingTime + $elapsed;
+            }
+        }
+
+        Connection::run(
+            'UPDATE task_sessions
+             SET challenge_time_seconds = :t, challenge_started_at = NOW()
+             WHERE id = :id AND status = :active',
+            [':t' => $newTotal, ':id' => $taskId, ':active' => self::STATUS_ACTIVE]
+        );
+
+        return [
+            'challenge_time_seconds' => $newTotal,
+            'challenge_started_at' => date('Y-m-d H:i:s'),
+        ];
+    }
+
+    /**
+     * Accumulate final time when student submits flag or ends challenge session.
+     * Clears challenge_started_at.
+     */
+    public function endChallengeSession(int $taskId): bool
+    {
+        $task = $this->findById($taskId);
+        if ($task === null) {
+            return false;
+        }
+
+        $previousStartedAt = $task['challenge_started_at'] ?? null;
+        if ($previousStartedAt !== null) {
+            $elapsed = (int)((time() - strtotime($previousStartedAt)));
+            $existingTime = (int)($task['challenge_time_seconds'] ?? 0);
+            Connection::run(
+                'UPDATE task_sessions
+                 SET challenge_time_seconds = challenge_time_seconds + :elapsed,
+                     challenge_started_at = NULL
+                 WHERE id = :id',
+                [':elapsed' => max(0, $elapsed), ':id' => $taskId]
+            );
+        }
+
+        return true;
+    }
+
+    /**
      * Active tasks for a student (status=active, expires_at > NOW).
      * @return array<int,array<string,mixed>>
      */

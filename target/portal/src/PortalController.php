@@ -148,6 +148,42 @@ final class PortalController
         ];
     }
 
+    /* ===== Challenge Start ===== */
+
+    /**
+     * GET /challenge/start/{slug}?task_id=XXX
+     *
+     * Called when student enters a challenge. Records start time via Server API,
+     * then redirects to the actual challenge page.
+     */
+    public function challengeStart(array $req): array
+    {
+        $slug = $req['route_params'][0] ?? '';
+        $taskId = (int)($req['query']['task_id'] ?? 0);
+
+        if ($slug === '' || $taskId === 0) {
+            return [
+                'status' => 302,
+                'headers' => ['Location' => '/task', 'Content-Type' => 'text/html; charset=utf-8'],
+                'body' => '',
+            ];
+        }
+
+        // Tell the server the student has started the challenge
+        // (accumulates time if returning)
+        $this->agent->post('/challenge-start', ['task_id' => $taskId]);
+
+        // Redirect to the actual challenge directory
+        return [
+            'status' => 302,
+            'headers' => [
+                'Location' => '/challenge/' . $slug . '/',
+                'Content-Type' => 'text/html; charset=utf-8',
+            ],
+            'body' => '',
+        ];
+    }
+
     /* ===== Helpers ===== */
 
     private function vmUuid(): string
