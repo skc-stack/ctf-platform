@@ -124,6 +124,7 @@ function ctf_web_routes(Router $router): void
     $router->post('/api/v1/device/task/validate', [DeviceAuth::class, RateLimitTaskValidate::class], [TaskController::class, 'validateApi']);
     $router->post('/api/v1/device/challenge/start', [DeviceAuth::class], [TaskController::class, 'startChallengeApi']);
     $router->post('/api/v1/device/task/complete', [DeviceAuth::class, RateLimitFlagSubmit::class], [SubmissionController::class, 'completeFromDevice']);
+    $router->post('/api/v1/device/submit-flag', [DeviceAuth::class], [SubmissionController::class, 'submitFlagFromDevice']);
     $router->post('/api/v1/device/sync-report', [DeviceAuth::class], [DeviceController::class, 'syncReport']);
     $router->get('/api/v1/device/challenges', [DeviceAuth::class], [DeviceController::class, 'listChallenges']);
     $router->get('/api/v1/device/challenges/{id}/download', [DeviceAuth::class], [DeviceController::class, 'downloadChallenge']);

@@ -14,6 +14,7 @@ use CTF\Server\Services\SubmissionService;
  * Routes:
  *   POST /api/v1/student/submit        — browser, CSRF, Auth, RequireStudent
  *   POST /api/v1/device/task/complete  — device, DeviceAuth + RateLimit
+ *   POST /api/v1/device/submit-flag   — device, DeviceAuth (for check_task.php)
  */
 final class SubmissionController extends BaseController
 {
@@ -74,6 +75,36 @@ final class SubmissionController extends BaseController
             'points_awarded' => $result['points'],
             'total_score' => $result['total_score'],
             'new_solve' => $result['new_solve'],
+        ], $http);
+    }
+
+    /**
+     * Submit flag from check_task.php on Target VM.
+     * Unlike completeFromDevice, this does NOT use nonce (manual submission from challenge page).
+     *
+     * POST /api/v1/device/submit-flag
+     */
+    public function submitFlagFromDevice(Request $req): Response
+    {
+        $device = $req->device ?? null;
+        if ($device === null) {
+            return $this->jsonError('Device not authenticated', 401);
+        }
+        $payload = $req->isJson() ? $req->json() : $req->post;
+        $taskId = (int)($payload['task_id'] ?? 0);
+        $flag = trim((string)($payload['flag'] ?? ''));
+        if ($taskId === 0 || $flag === '') {
+            return $this->jsonError('Missing required fields: task_id, flag', 400);
+        }
+        // Use submitFromDevice logic without nonce requirement
+        $result = $this->service->submitFromDeviceNoNonce($device, $taskId, $flag, $req);
+        $http = $result['ok'] ? 200 : 400;
+        return $this->jsonOk([
+            'correct' => $result['ok'],
+            'reason' => $result['reason'] ?? null,
+            'points_awarded' => $result['points'] ?? 0,
+            'total_score' => $result['total_score'] ?? 0,
+            'new_solve' => $result['new_solve'] ?? false,
         ], $http);
     }
 }

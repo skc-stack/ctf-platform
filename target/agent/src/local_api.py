@@ -181,6 +181,24 @@ def create_app(config: Optional[Config] = None,
         except ServerAPIError as e:
             return jsonify({"error": e.message}), e.status_code
 
+    # ---- /submit-flag ----------------------------------------------------
+
+    @app.post("/submit-flag")
+    def submit_flag():
+        """Called by check_task.php when student submits flag from challenge page.
+        Forwards to Server for validation and scoring."""
+        c = _require_cred()
+        body = request.get_json(silent=True) or {}
+        task_id = body.get("task_id")
+        flag = (body.get("flag") or "").strip()
+        if not task_id or not flag:
+            return jsonify({"error": "task_id and flag required"}), 400
+        try:
+            resp = ServerAPI(cfg, c).submit_flag(int(task_id), flag)
+            return jsonify(resp.body.get("data", resp.body))
+        except ServerAPIError as e:
+            return jsonify({"error": e.message}), e.status_code
+
     # ---- /reset ----------------------------------------------------------
 
     @app.post("/reset")

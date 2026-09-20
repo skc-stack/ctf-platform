@@ -1,0 +1,297 @@
+<?php
+/**
+ * check_task.php - 挑戰題目完成檢查頁面範本
+ *
+ * 由老師上傳題目時放在挑戰目錄中。
+ * 學生進入挑戰題目時會執行此檔案。
+ *
+ * === 老師需要修改的地方 ===
+ * 1. 修改 check() 函式，實作你的挑戰任務檢查邏輯
+ * 2. 可選：修改 get_flag() 讀取自訂 flag 檔案位置
+ *
+ * === 不要修改以下程式碼 ===
+ */
+
+// -----------------------------------------------------------------------------
+// 取得挑戰目錄路徑（根據目前 URL 推算）
+// -----------------------------------------------------------------------------
+$requestUri = $_SERVER['REQUEST_URI'] ?? '/';
+$pathParts = explode('/', trim(parse_url($requestUri, PHP_URL_PATH), '/'));
+$slugIndex = array_search('challenge', $pathParts);
+$challengeSlug = ($slugIndex !== false && isset($pathParts[$slugIndex + 1])) ? $pathParts[$slugIndex + 1] : '';
+$challengeRoot = '/srv/ctf/challenges/' . $challengeSlug;
+
+// -----------------------------------------------------------------------------
+// get_flag() - 讀取動態 Flag
+// -----------------------------------------------------------------------------
+function get_flag(): string {
+    global $challengeRoot;
+    $flagFile = $challengeRoot . '/.current_flag';
+    if (!is_file($flagFile)) {
+        return '';
+    }
+    $content = trim((string)file_get_contents($flagFile));
+    return $content;
+}
+
+// -----------------------------------------------------------------------------
+// check() - 檢查挑戰任務是否完成
+// -----------------------------------------------------------------------------
+/**
+ * 回傳 true = 挑戰完成，顯示 Flag 提交表單
+ * 回傳 false = 挑戰尚未完成，顯示提示訊息
+ *
+ * 在此實作你的檢查邏輯，例如：
+ *   - 檢查特定檔案是否存在
+ *   - 檢查資料庫狀態
+ *   - 檢查服務是否啟動
+ *   - 檢查特定檔案內容是否正確
+ */
+function check(): bool {
+    global $challengeRoot;
+
+    // ================================================================
+    // 【修改這裡】實作你的挑戰檢查邏輯
+    // ================================================================
+
+    // 範例：檢查 /tmp/challenge_completed.lock 檔案是否存在
+    // return is_file($challengeRoot . '/solved');
+
+    // 範例：檢查資料庫中某個欄位
+    // $pdo = new PDO('mysql:host=localhost;dbname=my_db', 'user', 'pass');
+    // $stmt = $pdo->prepare("SELECT solved FROM challenges WHERE id = 1");
+    // $stmt->execute();
+    // return (bool)$stmt->fetchColumn();
+
+    // 範例：檢查特定服務是否正常運作
+    // $output = shell_exec('curl -s http://localhost:8080/health');
+    // return str_contains($output, 'ok');
+
+    // 預設：直接通過檢查（讓學生可以直接嘗試提交）
+    return true;
+}
+
+// -----------------------------------------------------------------------------
+// 以下為系統程式碼，請勿修改
+// -----------------------------------------------------------------------------
+
+// 取得 flag
+$flag = get_flag();
+$isCompleted = check();
+
+// 取得 task_id（從 cookie 或 localStorage）
+$taskId = $_COOKIE['ctf_task_id'] ?? '';
+?>
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>挑戰答題 - <?= htmlspecialchars($challengeSlug, ENT_QUOTES, 'UTF-8') ?></title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+            background: #0e1116;
+            color: #c8d3df;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 560px;
+            width: 100%;
+            background: #161b22;
+            border: 1px solid #2a3138;
+            border-radius: 8px;
+            padding: 32px;
+        }
+        h1 {
+            color: #6abe6a;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        h1.pending {
+            color: #bf6f3a;
+        }
+        .flag-display {
+            background: #0e1116;
+            border: 1px solid #2a3138;
+            border-radius: 4px;
+            padding: 12px 16px;
+            margin: 16px 0;
+            font-size: 18px;
+            color: #f7c884;
+            word-break: break-all;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 15px;
+            font-family: inherit;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .btn:hover { opacity: 0.85; }
+        .btn-primary {
+            background: #6abe6a;
+            color: #0e1116;
+        }
+        .btn-secondary {
+            background: #2a3138;
+            color: #c8d3df;
+        }
+        .form-group {
+            margin: 16px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 6px;
+            color: #8b969e;
+            font-size: 13px;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px 12px;
+            background: #0e1116;
+            border: 1px solid #2a3138;
+            border-radius: 4px;
+            color: #c8d3df;
+            font-size: 16px;
+            font-family: inherit;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #6abe6a;
+        }
+        .message {
+            padding: 12px 16px;
+            border-radius: 4px;
+            margin-bottom: 16px;
+            font-size: 14px;
+        }
+        .message.success {
+            background: rgba(106, 190, 106, 0.15);
+            border: 1px solid #6abe6a;
+            color: #6abe6a;
+        }
+        .message.error {
+            background: rgba(191, 111, 58, 0.15);
+            border: 1px solid #bf6f3a;
+            color: #bf6f3a;
+        }
+        .hidden { display: none; }
+        #result {
+            margin-top: 16px;
+            padding: 12px 16px;
+            border-radius: 4px;
+            font-size: 14px;
+            display: none;
+        }
+        #result.success {
+            display: block;
+            background: rgba(106, 190, 106, 0.15);
+            border: 1px solid #6abe6a;
+            color: #6abe6a;
+        }
+        #result.error {
+            display: block;
+            background: rgba(191, 111, 58, 0.15);
+            border: 1px solid #bf6f3a;
+            color: #bf6f3a;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <?php if ($isCompleted): ?>
+            <h1><i class="bi bi-check-circle"></i> 挑戰完成！</h1>
+            <p style="color:#8b969e;margin-bottom:16px;font-size:14px">
+                恭喜！你已達成挑戰條件，請繳交 Flag 完成解題。
+            </p>
+
+            <?php if ($flag): ?>
+                <div class="flag-display"><?= htmlspecialchars($flag, ENT_QUOTES, 'UTF-8') ?></div>
+            <?php else: ?>
+                <div class="message error">找不到 Flag，請確認挑戰已正確啟動。</div>
+            <?php endif; ?>
+
+            <form id="flagForm">
+                <input type="hidden" name="task_id" value="<?= htmlspecialchars($taskId, ENT_QUOTES, 'UTF-8') ?>">
+                <input type="hidden" name="flag" value="<?= htmlspecialchars($flag, ENT_QUOTES, 'UTF-8') ?>">
+                <div class="form-group">
+                    <label>Flag</label>
+                    <input type="text" name="flag_input" value="<?= htmlspecialchars($flag, ENT_QUOTES, 'UTF-8') ?>"
+                           placeholder="flag{...}" required>
+                </div>
+                <button type="submit" class="btn btn-primary" id="submitBtn">
+                    <i class="bi bi-flag-fill"></i> 送出 Flag
+                </button>
+            </form>
+            <div id="result"></div>
+
+        <?php else: ?>
+            <h1 class="pending"><i class="bi bi-hourglass"></i> 尚未完成</h1>
+            <p style="color:#8b969e;margin-bottom:16px">
+                此挑戰尚未達成解題條件。<br>
+                請繼續努力，完成所有要求後再回來。
+            </p>
+            <button class="btn btn-secondary" onclick="location.reload()">
+                <i class="bi bi-arrow-clockwise"></i> 重新檢查
+            </button>
+        <?php endif; ?>
+    </div>
+
+    <script>
+    document.getElementById('flagForm')?.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const btn = document.getElementById('submitBtn');
+        const flagInput = this.querySelector('input[name="flag_input"]');
+        const result = document.getElementById('result');
+        const flag = flagInput.value.trim();
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="bi bi-hourglass"></i> 傳送中...';
+
+        try {
+            // 送到 Target VM 的 local API
+            const resp = await fetch('http://127.0.0.1:8787/submit-flag', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    task_id: <?= json_encode($taskId, JSON_UNESCAPED_UNICODE) ?>,
+                    flag: flag
+                })
+            });
+            const json = await resp.json();
+            const data = json.data || {};
+
+            if (data.correct) {
+                result.className = 'success';
+                result.innerHTML = '<i class="bi bi-check-circle-fill"></i> 答對了！+' + (data.points_awarded || 0) + ' 分';
+                btn.disabled = true;
+                btn.innerHTML = '<i class="bi bi-check"></i> 已完成';
+            } else {
+                result.className = 'error';
+                result.innerHTML = '<i class="bi bi-x-circle-fill"></i> ' + (data.reason || 'Flag 不正確');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-flag-fill"></i> 重新送出';
+            }
+            result.style.display = 'block';
+        } catch (e) {
+            result.className = 'error';
+            result.innerHTML = '<i class="bi bi-x-circle-fill"></i> 提交失敗：' + e;
+            result.style.display = 'block';
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-flag-fill"></i> 重新送出';
+        }
+    });
+    </script>
+</body>
+</html>
