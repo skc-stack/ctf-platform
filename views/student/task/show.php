@@ -152,25 +152,7 @@ $isCompleted = $taskStatus === 'completed';
         </div>
     </div>
 
-    <?php if ($status === 'active' && !$expired && !$isCompleted): ?>
-    <h2 class="ctf-dash-sub" id="flagSection">/ 繳交 Flag</h2>
-    <form id="flagForm" class="ctf-form">
-        <input type="hidden" name="_csrf" value="<?= htmlspecialchars(CSRF::token(), ENT_QUOTES, 'UTF-8') ?>">
-        <input type="hidden" name="task_id" value="<?= $taskId ?>">
-        <label class="ctf-field">
-            <span class="ctf-field-label">Flag（格式：<code>flag{...}</code>）</span>
-            <input type="text" name="flag" id="flagInput" required placeholder="flag{32-char-hex}"
-                   pattern="flag\{[a-fA-F0-9]+\}"
-                   style="font-family:var(--font-mono);font-size:18px;letter-spacing:1px;">
-        </label>
-        <div id="flagFeedback" style="margin-top:8px;display:none"></div>
-        <div class="ctf-form-actions">
-            <button type="submit" class="ctf-btn ctf-btn-primary" id="submitBtn">
-                <i class="bi bi-flag-fill"></i> 送出 Flag
-            </button>
-        </div>
-    </form>
-    <?php elseif ($isCompleted): ?>
+    <?php if ($isCompleted): ?>
     <div class="ctf-flash ctf-flash-success" style="margin-top:1rem">
         <i class="bi bi-trophy-fill"></i> 恭喜！你已成功完成此挑戰！
     </div>
@@ -195,7 +177,6 @@ $isCompleted = $taskStatus === 'completed';
 <script>
 const taskId = <?= $taskId ?>;
 const taskToken = <?= json_encode($task_token ?? '') ?>;
-const entrypoint = <?= json_encode($entrypoint) ?>;
 
 // Copy token and update status
 async function copyToken() {
@@ -254,60 +235,11 @@ async function pollStatus() {
         const data = await resp.json();
         if (data.success) {
             updateProgressUI(data.data.task_status);
-            if (data.data.task_status === 'completed') {
-                document.getElementById('flagSection')?.remove();
-                document.getElementById('flagForm')?.remove();
-            }
         }
     } catch (e) {
         console.error('Poll error:', e);
     }
 }
-
-// Submit flag
-document.getElementById('flagForm')?.addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const btn = document.getElementById('submitBtn');
-    const input = document.getElementById('flagInput');
-    const feedback = document.getElementById('flagFeedback');
-    const flag = input.value.trim();
-
-    btn.disabled = true;
-    btn.innerHTML = '<i class="bi bi-hourglass"></i> 驗證中...';
-
-    try {
-        const csrfInput = this.querySelector('[name=_csrf]');
-        const resp = await fetch('/api/v1/student/submit', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-            body: JSON.stringify({
-                _csrf: csrfInput.value,
-                task_id: taskId,
-                flag: flag
-            })
-        });
-        const result = await resp.json();
-
-        if (result.success) {
-            feedback.className = 'ctf-flash ctf-flash-success';
-            feedback.innerHTML = '<i class="bi bi-check-circle-fill"></i> 答對了！+' + result.data.points + ' 分';
-            feedback.style.display = 'block';
-            updateProgressUI('completed');
-            document.getElementById('flagSection')?.remove();
-        } else {
-            feedback.className = 'ctf-flash ctf-flash-error';
-            feedback.innerHTML = '<i class="bi bi-x-circle-fill"></i> ' + (result.error || 'Flag 不正確');
-            feedback.style.display = 'block';
-        }
-    } catch (e) {
-        feedback.className = 'ctf-flash ctf-flash-error';
-        feedback.innerHTML = '<i class="bi bi-x-circle-fill"></i> 提交失敗：' + e;
-        feedback.style.display = 'block';
-    }
-
-    btn.disabled = false;
-    btn.innerHTML = '<i class="bi bi-flag-fill"></i> 送出 Flag';
-});
 
 // Start polling every 3 seconds
 setInterval(pollStatus, 3000);
