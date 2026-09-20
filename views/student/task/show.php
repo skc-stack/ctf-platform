@@ -116,18 +116,10 @@ $isCompleted = $taskStatus === 'completed';
             <div class="ctf-stat-value ctf-stat-value-cyan">v<?= $challengeVersion ?></div>
         </div>
         <div class="ctf-stat-card">
-            <div class="ctf-stat-label"><i class="bi bi-link-45deg"></i> 挑戰入口</div>
-            <div class="ctf-mono" style="font-size:13px;padding-top:14px">
-                <code style="word-break:break-all"><?= htmlspecialchars($entrypoint, ENT_QUOTES, 'UTF-8') ?></code>
+            <div class="ctf-stat-label"><i class="bi bi-pc"></i> 靶場入口</div>
+            <div style="margin-top:10px;font-size:14px;color:#c8d3df">
+                進入靶場 Portal，輸入 Task Token 開始解題
             </div>
-            <?php if ($challengeSlug && $status === 'active' && !$expired && !$isCompleted): ?>
-            <div style="margin-top:12px">
-                <button type="button" class="ctf-btn ctf-btn-primary" id="openChallengeBtn"
-                    onclick="openChallenge()">
-                    <i class="bi bi-box-arrow-up-right"></i> 開啟題目
-                </button>
-            </div>
-            <?php endif; ?>
         </div>
     </div>
     <?php endif; ?>
@@ -253,23 +245,6 @@ function updateProgressUI(status) {
         'completed': '完成解題'
     };
     badge.textContent = labels[status] || status;
-}
-
-// Open challenge and update status
-async function openChallenge() {
-    // Update status to challenge_started before opening
-    try {
-        await fetch(`/api/v1/student/task/${taskId}/status`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-            body: JSON.stringify({ task_status: 'challenge_started' })
-        });
-        updateProgressUI('challenge_started');
-    } catch (e) {
-        console.error('Failed to update status:', e);
-    }
-    // Open challenge in new tab
-    window.open(entrypoint, '_blank');
 }
 
 // Poll for status updates
