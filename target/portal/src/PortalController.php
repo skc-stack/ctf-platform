@@ -174,13 +174,49 @@ final class PortalController
         $this->agent->post('/challenge-start', ['task_id' => $taskId]);
 
         // Redirect to the actual challenge directory
+        // Use /enter/ prefix so Apache doesn't intercept it as a static directory
         return [
             'status' => 302,
             'headers' => [
-                'Location' => '/challenge/' . $slug . '/',
+                'Location' => '/enter/' . $slug . '/',
                 'Content-Type' => 'text/html; charset=utf-8',
             ],
             'body' => '',
+        ];
+    }
+
+    /**
+     * GET /enter/{slug}
+     * Serve the challenge's index.php from the challenge directory.
+     */
+    public function serveChallenge(array $req): array
+    {
+        $slug = $req['route_params'][0] ?? '';
+        $challengePath = '/srv/ctf/challenges/' . $slug;
+        $indexFile = $challengePath . '/index.php';
+
+        if (!is_file($indexFile)) {
+            return [
+                'status' => 404,
+                'headers' => ['Content-Type' => 'text/html; charset=utf-8'],
+                'body' => '<h1>404 - Challenge not found</h1>',
+            ];
+        }
+
+        // Include and execute the challenge's index.php
+        // The challenge's PHP can access $slug via $_GET['slug']
+        chdir($challengePath);
+        ob_start();
+        try {
+            include $indexFile;
+            $body = ob_get_clean();
+        } catch (\Throwable $e) {
+            $body = '<h1>Error loading challenge</h1><pre>' . htmlspecialchars($e->getMessage()) . '</pre>';
+        }
+        return [
+            'status' => 200,
+            'headers' => ['Content-Type' => 'text/html; charset=utf-8'],
+            'body' => $body,
         ];
     }
 
