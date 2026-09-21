@@ -264,9 +264,6 @@ final class PortalController
             ], 404);
         }
 
-        // Set up session for the challenge
-        @session_start();
-
         // Include and execute the challenge file
         // Capture output from the included file
         ob_start();
