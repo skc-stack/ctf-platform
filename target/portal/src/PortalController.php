@@ -166,21 +166,38 @@ final class PortalController
         }
 
         // Support both 'token' and 'task_id' parameters
-        $taskToken = $_GET['token'] ?? $_POST['token'] ?? $_GET['task_id'] ?? $_POST['task_id'] ?? '';
-        if ($taskToken === '') {
-            return Router::render('error', [
-                'title' => '錯誤',
-                'message' => '缺少 Task Token 或 Task ID',
-            ], 400);
+        $taskToken = $_GET['token'] ?? $_POST['token'] ?? '';
+        $taskId = $_GET['task_id'] ?? $_POST['task_id'] ?? '';
+
+        if ($taskId !== '') {
+            // task_id provided - notify CTF Server that challenge was started
+            // This calls the Server's API to record the start time
+            $serverUrl = getenv('CTF_SERVER_URL') ?: 'http://ctf-server';
+            $apiUrl = rtrim($serverUrl, '/') . '/api/v1/device/challenge/start';
+
+            $context = stream_context_create([
+                'http' => [
+                    'method' => 'POST',
+                    'header' => "Content-Type: application/json\r\n",
+                    'content' => json_encode(['task_id' => (int)$taskId]),
+                    'timeout' => 5,
+                    'ignore_errors' => true,
+                ]
+            ]);
+
+            $response = @file_get_contents($apiUrl, false, $context);
+            // Even if Server doesn't respond, allow student to enter challenge
         }
 
-        // Verify task with Agent
-        $result = $this->agent->post('/task', ['task_token' => $taskToken]);
-        if (!$result['ok']) {
-            return Router::render('error', [
-                'title' => '錯誤',
-                'message' => $result['error'] ?? 'Task 無效或已過期',
-            ], 403);
+        if ($taskToken !== '') {
+            // Verify task token with Agent (for traditional token-based flow)
+            $result = $this->agent->post('/task', ['task_token' => $taskToken]);
+            if (!$result['ok']) {
+                return Router::render('error', [
+                    'title' => '錯誤',
+                    'message' => $result['error'] ?? 'Task Token 無效或已過期',
+                ], 403);
+            }
         }
 
         // Redirect to challenge entry point
