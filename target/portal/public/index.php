@@ -45,8 +45,9 @@ $router->post('/task', [], [PortalController::class, 'doTask']);
 $router->post('/reset', [], [PortalController::class, 'doReset']);
 // Challenge entrypoint — record start time then redirect to challenge
 $router->get('/challenge/start/{slug}', [], [PortalController::class, 'challengeStart']);
-// Serve challenge page (after redirect from challengeStart)
+// Serve challenge page (after redirect from challengeStart) - optional file path
 $router->get('/enter/{slug}', [], [PortalController::class, 'serveChallenge']);
+$router->get('/enter/{slug}/{file}', [], [PortalController::class, 'serveChallenge']);
 
 $result = $router->dispatch($req);
 
