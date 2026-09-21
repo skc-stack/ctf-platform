@@ -281,6 +281,15 @@ final class PortalController
             ], 500);
         }
 
+        // Inject base tag to fix relative URLs
+        // This ensures links like "check.php" resolve to "/enter/{slug}/check.php"
+        $baseTag = '<base href="/enter/' . htmlspecialchars($slug, ENT_QUOTES, 'UTF-8') . '/">';
+        if (stripos($output, '<head') !== false) {
+            $output = preg_replace('/<head(.*?)>/i', '<head$1>' . $baseTag, $output, 1);
+        } else {
+            $output = $baseTag . $output;
+        }
+
         // Return the challenge output
         return [
             'status' => 200,
