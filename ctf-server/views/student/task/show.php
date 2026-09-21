@@ -87,6 +87,10 @@ $isCompleted = $taskStatus === 'completed';
             <i class="bi bi-check-circle-fill"></i> 已複製！請貼到 Target Portal
         </div>
     </div>
+    <?php elseif ($status === 'active' && !$expired): ?>
+    <div class="ctf-flash ctf-flash-info" style="margin-bottom:1rem">
+        <i class="bi bi-info-circle-fill"></i> Task 仍在進行中，請透過 Target Portal 繼續解題。
+    </div>
     <?php else: ?>
     <div class="ctf-flash ctf-flash-warning" style="margin-bottom:1rem">
         <i class="bi bi-exclamation-triangle-fill"></i> Token 已過期或遺失。請到學生儀表板重新啟動任務。
