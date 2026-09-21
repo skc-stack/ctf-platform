@@ -151,7 +151,7 @@ final class PortalController
     /* ===== Challenge Entry ===== */
 
     /**
-     * Start a challenge - validates task token and redirects to challenge
+     * Start a challenge - validates task and redirects to challenge
      */
     public function challengeStart(array $req): array
     {
@@ -165,20 +165,21 @@ final class PortalController
             ];
         }
 
-        // Verify task token with Agent
-        $taskToken = $_GET['token'] ?? $_POST['token'] ?? '';
+        // Support both 'token' and 'task_id' parameters
+        $taskToken = $_GET['token'] ?? $_POST['token'] ?? $_GET['task_id'] ?? $_POST['task_id'] ?? '';
         if ($taskToken === '') {
             return Router::render('error', [
                 'title' => '錯誤',
-                'message' => '缺少 Task Token',
+                'message' => '缺少 Task Token 或 Task ID',
             ], 400);
         }
 
+        // Verify task with Agent
         $result = $this->agent->post('/task', ['task_token' => $taskToken]);
         if (!$result['ok']) {
             return Router::render('error', [
                 'title' => '錯誤',
-                'message' => $result['error'] ?? 'Task Token 無效',
+                'message' => $result['error'] ?? 'Task 無效或已過期',
             ], 403);
         }
 
