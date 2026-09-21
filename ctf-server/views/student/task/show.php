@@ -69,8 +69,8 @@ $isCompleted = $taskStatus === 'completed';
     .task-progress-steps .step { display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:6px;background:rgba(42,49,56,0.3);color:#8b969e;transition:all .3s }
     .task-progress-steps .step.done { background:rgba(106,190,106,0.15);color:#6abe6a }
     .task-progress-steps .step.active { background:rgba(191,111,58,0.15);color:#bf6f3a }
-    .task-progress-steps .step.active.blink { animation: blink-animation 1s ease-in-out infinite }
-    .task-progress-steps .step.active.blink span { color:#ffe066;text-shadow:0 0 8px #ffe066,0 0 12px #ffaa00 }
+    .task-progress-steps .step.active.blink, .task-progress-steps .step.done.blink { animation: blink-animation 1s ease-in-out infinite }
+    .task-progress-steps .step.active.blink span, .task-progress-steps .step.done.blink span { color:#ffe066;text-shadow:0 0 8px #ffe066,0 0 12px #ffaa00 }
     @keyframes blink-animation {
         0%, 100% { background:rgba(255,220,50,0.2); }
         50% { background:rgba(255,180,0,0.35); }
