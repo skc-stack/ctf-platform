@@ -8,6 +8,9 @@
  * @package CTF\Challenge
  */
 
+// 引入系統提供的 Flag 函式（請勿修改或刪除此行）
+require_once __DIR__ . '/ctf-flag.php';
+
 /**
  * 驗證學生是否完成任務
  *
@@ -47,50 +50,6 @@ function check(): bool
     // ==========================================
 
     return false; // 預設回傳 false，任務未完成
-}
-
-/**
- * 取得動態 Flag
- *
- * 此函式由系統提供，請勿修改。
- * 只有在 check() 回傳 true 時才會呼叫此函式。
- *
- * @return string 動態產生的 Flag
- */
-function getflag(): string
-{
-    // 透過 Portal API 取得 Flag
-    // 這個實作由 Target Portal 提供
-    static $flag = null;
-
-    if ($flag === null) {
-        // 嘗試從 Portal 取得 flag
-        $port = getenv('CTF_PORTAL_PORT') ?: '80';
-        $portal_url = "http://127.0.0.1:{$port}/api/flag";
-
-        $context = stream_context_create([
-            'http' => [
-                'method' => 'POST',
-                'header' => "Content-Type: application/json\r\n",
-                'content' => json_encode([
-                    'challenge_id' => basename(__DIR__),
-                    'student_id' => $_SESSION['student_id'] ?? 'anonymous',
-                ]),
-                'timeout' => 5,
-                'ignore_errors' => true,
-            ]
-        ]);
-
-        $response = @file_get_contents($portal_url, false, $context);
-        if ($response !== false) {
-            $data = json_decode($response, true);
-            $flag = $data['flag'] ?? 'CTF{FLAG_ERROR}';
-        } else {
-            $flag = 'CTF{FLAG_UNAVAILABLE}';
-        }
-    }
-
-    return $flag;
 }
 
 /**
