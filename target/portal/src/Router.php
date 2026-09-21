@@ -52,12 +52,13 @@ final class Router
                 continue;
             }
             // Convert /task/{id} to a regex with a capture group.
+            // First pass: extract parameter names
             $paramNames = [];
-            $regexPattern = preg_replace('#\{([a-zA-Z_]+)\}#', function() use (&$paramNames) {
-                $paramNames[] = func_get_args()[1];
-                return '([^/]+)';
-            }, $rpath);
-            $regex = '#^' . $regexPattern . '/?$#';
+            $rpath2 = $rpath;
+            if (preg_match_all('#\{([a-zA-Z_]+)\}#', $rpath, $matches)) {
+                $paramNames = $matches[1];
+            }
+            $regex = '#^' . preg_replace('#\{([a-zA-Z_]+)\}#', '([^/]+)', $rpath) . '/?$#';
             if (!preg_match($regex, $path, $m)) {
                 continue;
             }
