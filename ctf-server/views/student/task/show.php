@@ -177,6 +177,12 @@ $isCompleted = $taskStatus === 'completed';
 <script>
 const taskId = <?= $taskId ?>;
 const taskToken = <?= json_encode($task_token ?? '') ?>;
+const initialStatus = <?= json_encode($taskStatus ?? 'token_not_copied') ?>;
+
+// Sync initial UI state on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateProgressUI(initialStatus);
+});
 
 // Copy token and update status
 async function copyToken() {
@@ -243,7 +249,9 @@ async function pollStatus() {
             return;
         }
         const data = await resp.json();
+        console.log('Poll response:', data);
         if (data.success) {
+            console.log('Updating UI with status:', data.data.task_status);
             updateProgressUI(data.data.task_status);
         } else if (data.error && data.error.toLowerCase().includes('unauthorized')) {
             alert('登入已過期，將導向首頁');
