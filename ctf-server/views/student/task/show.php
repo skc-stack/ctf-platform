@@ -226,13 +226,17 @@ function updateProgressUI(status) {
     const stepElements = ['step1','step2','step3','step4'];
     stepElements.forEach((id, idx) => {
         const el = document.getElementById(id);
+        let newClass = 'step';
         if (idx < currentStep) {
-            el.className = 'step done';
+            newClass = 'step done';
         } else if (idx === currentStep) {
-            el.className = 'step active';
-        } else {
-            el.className = 'step';
+            newClass = 'step active';
+            // Keep blink effect for challenge_started step
+            if (status === 'challenge_started') {
+                newClass = 'step done blink';
+            }
         }
+        el.className = newClass;
     });
     const badge = document.getElementById('statusBadge');
     const labels = {
