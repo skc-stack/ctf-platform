@@ -151,10 +151,31 @@ $cid = (int)($challenge['id'] ?? 0);
 
     <!-- CKEditor 5 -->
     <script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@ckeditor/ckeditor5-font@41.4.2/index.min.js"></script>
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         ClassicEditor.create(document.querySelector('#description'), {
-            toolbar: ['heading', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList', '|', 'outdent', 'indent', '|', 'imageUpload', 'blockQuote', 'insertTable', '|', 'undo', 'redo'],
+            toolbar: ['heading', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList', '|', 'outdent', 'indent', '|', 'fontColor', 'fontBackgroundColor', 'imageUpload', 'blockQuote', 'insertTable', '|', 'undo', 'redo'],
+            fontColor: {
+                colors: [
+                    { color: '#000000', label: '黑色' },
+                    { color: '#ffffff', label: '白色' },
+                    { color: '#ff0000', label: '紅色' },
+                    { color: '#00ff00', label: '綠色' },
+                    { color: '#0000ff', label: '藍色' },
+                    { color: '#ffff00', label: '黃色' },
+                ]
+            },
+            fontBackgroundColor: {
+                colors: [
+                    { color: '#000000', label: '黑色' },
+                    { color: '#ffffff', label: '白色' },
+                    { color: '#ff0000', label: '紅色' },
+                    { color: '#00ff00', label: '綠色' },
+                    { color: '#0000ff', label: '藍色' },
+                    { color: '#ffff00', label: '黃色' },
+                ]
+            },
             image: {
                 upload: {
                     types: ['png', 'jpeg', 'gif', 'webp']
