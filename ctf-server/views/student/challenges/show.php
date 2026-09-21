@@ -22,6 +22,27 @@ $id = (int)($challenge['id'] ?? 0);
         <?php endif; ?>
     </div>
 
+    <!-- 計分標準說明 -->
+    <div style="margin:1rem 0;padding:12px 16px;background:rgba(25,135,84,0.1);border:1px solid rgba(25,135,84,0.3);border-radius:8px;font-size:14px">
+        <div style="font-weight:600;margin-bottom:8px;color:#198754">
+            <i class="bi bi-info-circle-fill"></i> 計分標準
+        </div>
+        <div style="color:#555">
+            第 1 次解成功：<?= (int)($challenge['points'] ?? 0) ?> 分（滿分）<br>
+            第 2 次解成功：<?= (int)round(($challenge['points'] ?? 100) * 0.9) ?> 分（90%）<br>
+            第 3 次解成功：<?= (int)round(($challenge['points'] ?? 100) * 0.81) ?> 分（81%）<br>
+            第 4 次以上以此類推…
+        </div>
+        <?php if ((int)($challenge['my_attempts'] ?? 0) > 0): ?>
+        <div style="margin-top:10px;padding-top:8px;border-top:1px solid rgba(25,135,84,0.2);color:#333">
+            <i class="bi bi-keyboard"></i> 你已嘗試 <?= (int)($challenge['my_attempts'] ?? 0) ?> 次
+            <?php if ((int)($challenge['solved_by_me'] ?? 0) === 1): ?>
+                ，解題成功花了 <strong><?= (int)($challenge['my_solve_attempts'] ?? 1) ?></strong> 次
+            <?php endif; ?>
+        </div>
+        <?php endif; ?>
+    </div>
+
     <?php if (!empty($challenge['description'])): ?>
         <div class="challenge-description" style="margin:1.5rem 0">
             <?= nl2br(preg_replace('/<script\b[^>]*>.*?<\/script>/si', '', (string)($challenge['description']))) ?>

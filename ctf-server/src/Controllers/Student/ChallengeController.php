@@ -98,10 +98,23 @@ final class ChallengeController extends BaseController
         $challenge['solve_count'] = (int)($row['c'] ?? 0);
 
         $solvedRow = \CTF\Server\Database\Connection::fetchOne(
-            'SELECT 1 FROM solves WHERE challenge_id = :cid AND student_id = :sid LIMIT 1',
+            'SELECT attempts FROM solves WHERE challenge_id = :cid AND student_id = :sid',
             [':cid' => (int)$id, ':sid' => $studentId]
         );
         $challenge['solved_by_me'] = $solvedRow !== null;
+        $challenge['my_attempts'] = 0;
+        $challenge['my_solve_attempts'] = 0;
+
+        if ($solvedRow !== null) {
+            $challenge['my_solve_attempts'] = (int)($solvedRow['attempts'] ?? 1);
+        }
+
+        // Get total submissions count for this student/challenge
+        $subRow = \CTF\Server\Database\Connection::fetchOne(
+            'SELECT COUNT(*) AS c FROM submissions WHERE challenge_id = :cid AND student_id = :sid',
+            [':cid' => (int)$id, ':sid' => $studentId]
+        );
+        $challenge['my_attempts'] = (int)($subRow['c'] ?? 0);
 
         // Check if student has an active task for this challenge
         $activeTask = \CTF\Server\Database\Connection::fetchOne(
