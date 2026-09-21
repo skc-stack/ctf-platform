@@ -253,9 +253,9 @@ async function pollStatus() {
         if (data.success) {
             console.log('Updating UI with status:', data.data.task_status);
             updateProgressUI(data.data.task_status);
-        } else if (data.error && data.error.toLowerCase().includes('unauthorized')) {
-            alert('登入已過期，將導向首頁');
-            window.location.href = '/';
+        } else {
+            // API returned error - show message but don't change UI
+            console.error('Status API error:', data.error);
         }
     } catch (e) {
         console.error('Poll error:', e);

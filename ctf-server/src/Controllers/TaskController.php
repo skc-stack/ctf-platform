@@ -151,7 +151,12 @@ final class TaskController extends BaseController
     public function statusApi(Request $req, string $id): Response
     {
         $studentId = (int)$_SESSION['user']['id'];
-        $task = $this->tasks->findById((int)$id);
+        $taskId = (int)$id;
+        // If the ID is 0 or negative, it's invalid
+        if ($taskId <= 0) {
+            return $this->jsonError('Invalid task ID', 400);
+        }
+        $task = $this->tasks->findById($taskId);
         if (!$task || (int)$task['student_id'] !== $studentId) {
             return $this->jsonError('Task not found', 404);
         }
