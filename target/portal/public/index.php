@@ -48,6 +48,7 @@ $router->get('/challenge/start/{slug}', [], [PortalController::class, 'challenge
 // Serve challenge page (after redirect from challengeStart) - optional file path
 $router->get('/enter/{slug}', [], [PortalController::class, 'serveChallenge']);
 $router->get('/enter/{slug}/{file}', [], [PortalController::class, 'serveChallenge']);
+$router->post('/enter/{slug}/{file}', [], [PortalController::class, 'serveChallenge']);
 
 $result = $router->dispatch($req);
 
