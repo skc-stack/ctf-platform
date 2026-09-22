@@ -170,15 +170,7 @@ final class TaskService
             ]);
         }
 
-        // Generate dynamic flag for all challenge types (flag + automatic).
-        // Automatic challenges write this flag to .current_flag for their verifier script.
-        $flag = FlagGenerator::compute((int)$task['student_id'], (string)$challenge['uuid'], (string)$task['uuid']);
-
-        return [
-            'task' => $task,
-            'challenge' => $challenge,
-            'flag' => $flag,
-        ];
+        return ['task' => $task, 'challenge' => $challenge];
     }
 
     /**
