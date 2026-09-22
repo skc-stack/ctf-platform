@@ -53,7 +53,7 @@ final class Router
             }
             // Convert /task/{id} to a regex with a capture group.
             $paramNames = [];
-            $pattern = preg_replace('#\{([a-zA-Z_]+)\}#', function($m) use (&$paramNames) {
+            $pattern = preg_replace_callback('#\{([a-zA-Z_]+)\}#', function($m) use (&$paramNames) {
                 $paramNames[] = $m[1];
                 return '([^/]+)';
             }, $rpath);
