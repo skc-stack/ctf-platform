@@ -1,0 +1,2 @@
+-- setup.sql for TEST-001
+-- 此題目不需要資料庫

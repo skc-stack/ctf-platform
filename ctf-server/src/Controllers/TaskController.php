@@ -90,6 +90,7 @@ final class TaskController extends BaseController
                 'entrypoint' => '/challenge/' . (string)$result['challenge']['slug'] . '/',
                 'challenge_version' => (int)$result['challenge']['version'],
                 'expires_at' => (string)$result['task']['expires_at'],
+                'flag' => $result['flag'] ?? null,
             ]);
         } catch (\CTF\Server\Services\TaskValidationException $e) {
             return $this->jsonError($e->getMessage(), $e->httpStatus, ['code' => $e->errorCode]);
