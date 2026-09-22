@@ -14,9 +14,8 @@ use CTF\Server\Support\Config;
  * Verify:  verify($token) → user row on success, null on failure
  *
  * On verify:
- *   - Sets users.email_verified_at = NOW()
- *   - If user.role == student and user.status != 'active', promotes to active
- *   - If user.role == teacher, leaves status = 'pending' (admin still approves)
+ *   - Student: sets users.status = 'active'
+ *   - Teacher: sets users.status = 'pending' (still requires admin approval)
  *   - Marks token.used_at = NOW() (one-shot)
  */
 final class VerificationService
@@ -68,18 +67,14 @@ final class VerificationService
                 'UPDATE email_verification_tokens SET used_at = NOW() WHERE id = :id',
                 [':id' => $row['id']]
             );
+            // Student activates immediately; teacher stays pending for admin approval.
+            $newStatus = $user['role'] === UserRepository::ROLE_TEACHER
+                ? UserRepository::STATUS_PENDING
+                : UserRepository::STATUS_ACTIVE;
             Connection::run(
-                'UPDATE users SET email_verified_at = NOW() WHERE id = :id',
-                [':id' => $user['id']]
+                'UPDATE users SET status = :s WHERE id = :id',
+                [':s' => $newStatus, ':id' => $user['id']]
             );
-            // Student auto-activates; teacher remains pending until admin approval.
-            if ($user['role'] === UserRepository::ROLE_STUDENT
-                && $user['status'] !== UserRepository::STATUS_ACTIVE) {
-                Connection::run(
-                    'UPDATE users SET status = :s WHERE id = :id',
-                    [':s' => UserRepository::STATUS_ACTIVE, ':id' => $user['id']]
-                );
-            }
         });
 
         return $this->users->findById((int)$user['id']);

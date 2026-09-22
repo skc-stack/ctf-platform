@@ -88,6 +88,14 @@ class ServerAPI:
             "detail": detail,
         })
 
+    def start_challenge(self, task_id: int) -> ServerResponse:
+        """POST /api/v1/device/challenge/start — record challenge start time (cumulative)."""
+        return self._post("/api/v1/device/challenge/start", {"task_id": task_id})
+
+    def submit_flag(self, task_id: int, flag: str) -> ServerResponse:
+        """POST /api/v1/device/submit-flag — submit flag from check_task.php."""
+        return self._post("/api/v1/device/submit-flag", {"task_id": task_id, "flag": flag})
+
     def sync_report(self, challenges: list[dict]) -> ServerResponse:
         """POST /api/v1/device/sync-report — report installed challenges to server.
 

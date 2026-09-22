@@ -41,7 +41,6 @@ final class PasswordResetService
 
         if (!$user) return null;
         if (empty($user['email'])) return null;
-        if (empty($user['email_verified_at'])) return null;
         if (($user['status'] ?? '') === UserRepository::STATUS_DISABLED) return null;
 
         $token = bin2hex(random_bytes(32));

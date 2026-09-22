@@ -224,10 +224,11 @@ final class ChallengeService
             'points' => (int)($challenge['points'] ?? 100),
             'entrypoint' => '/challenge/' . $slug . '/',
             'verification' => [
-                'type' => 'flag',
-                'flag_static' => '',
+                'type' => 'automatic',
+                'automatic' => [
+                    'script' => 'check.sh',
+                ],
             ],
-            'database' => null,
             'reset' => [
                 'drop_and_recreate_db' => false,
                 'restore_files' => ['web/'],
@@ -239,7 +240,17 @@ final class ChallengeService
             $manifest = array_merge($manifest, $metadata);
         }
 
+        // Add database block only if setup.sql exists
         $baseDir = rtrim((string)Config::get('STORAGE_CHALLENGE_PATH', 'storage/challenges'), '/\\');
+        $challengeDir = $baseDir . '/' . $slug;
+        if (is_file($challengeDir . '/setup.sql')) {
+            // Database name must be [A-Za-z0-9_] — replace hyphens with underscores
+            $dbName = str_replace('-', '_', $slug);
+            $manifest['database'] = [
+                'name' => $dbName,
+                'setup_sql' => 'setup.sql',
+            ];
+        }
         $manifestPath = $baseDir . '/' . $slug . '/manifest.json';
 
         $json = json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);

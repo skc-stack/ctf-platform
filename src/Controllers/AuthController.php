@@ -144,11 +144,7 @@ final class AuthController extends BaseController
             } else {
                 $remaining = $this->captcha->maxFails() - $count;
                 $reason = 'invalid_credentials';
-                if ($existing && $existing['status'] === UserRepository::STATUS_PENDING
-                    && empty($existing['email_verified_at'])) {
-                    $reason = 'email_not_verified';
-                    $this->flashError('此帳號 Email 尚未驗證，請查收註冊信完成驗證流程');
-                } elseif ($existing && $existing['status'] === UserRepository::STATUS_PENDING) {
+                if ($existing && $existing['status'] === UserRepository::STATUS_PENDING) {
                     $reason = 'pending_admin_approval';
                     $this->flashError('此帳號尚待管理員審核');
                 } elseif ($existing && $existing['status'] === UserRepository::STATUS_DISABLED) {
@@ -170,9 +166,7 @@ final class AuthController extends BaseController
         $this->captcha->clearFails();
         $this->auth->login($user, $req);
 
-        $intended = $_SESSION['intended_url'] ?? null;
-        unset($_SESSION['intended_url']);
-        return Response::redirect($intended ?: $this->dashboardUrl($user['role']));
+        return Response::redirect('/');
     }
 
     public function logout(Request $req): Response

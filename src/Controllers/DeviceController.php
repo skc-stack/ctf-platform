@@ -41,6 +41,83 @@ final class DeviceController extends BaseController
     }
 
     /**
+     * GET /api/v1/device/challenges
+     *
+     * Returns list of published challenges available for this device.
+     * Agent uses this to decide which challenges to download.
+     */
+    public function listChallenges(Request $req): Response
+    {
+        $device = $req->device;
+
+        // Get published challenges with their latest package info
+        $challenges = Connection::fetchAll(
+            'SELECT c.id, c.slug, c.version, c.title, cp.sha256
+             FROM challenges c
+             JOIN challenge_packages cp ON cp.challenge_id = c.id
+             WHERE c.status = :status
+               AND cp.version = c.version
+             ORDER BY c.id ASC',
+            [':status' => 'published']
+        );
+
+        $data = array_map(fn($row) => [
+            'id' => (int)$row['id'],
+            'challenge_id' => (string)$row['slug'],
+            'version' => (int)$row['version'],
+            'sha256' => (string)$row['sha256'],
+            'title' => (string)$row['title'],
+        ], $challenges);
+
+        return $this->jsonOk(['challenges' => $data]);
+    }
+
+    /**
+     * GET /api/v1/device/challenges/{id}/download
+     *
+     * Returns the challenge ZIP file as raw binary.
+     */
+    public function downloadChallenge(Request $req, string $id): Response
+    {
+        $device = $req->device;
+
+        // Find the challenge package
+        $pkg = Connection::fetchOne(
+            'SELECT cp.file_path, cp.original_name, cp.file_size
+             FROM challenge_packages cp
+             JOIN challenges c ON c.id = cp.challenge_id
+             WHERE cp.challenge_id = :cid AND cp.version = c.version
+               AND c.status = :status
+             LIMIT 1',
+            [':cid' => (int)$id, ':status' => 'published']
+        );
+
+        if (!$pkg) {
+            return $this->jsonError('Challenge not found', 404);
+        }
+
+        $filePath = $pkg['file_path'];
+        if (!is_file($filePath) || !is_readable($filePath)) {
+            return $this->jsonError('Challenge file not available', 404);
+        }
+
+        $content = file_get_contents($filePath);
+        if ($content === false) {
+            return $this->jsonError('Failed to read challenge file', 500);
+        }
+
+        return Response::make(
+            $content,
+            200,
+            [
+                'Content-Type' => 'application/zip',
+                'Content-Disposition' => 'attachment; filename="' . basename($pkg['original_name'] ?? 'challenge.zip') . '"',
+                'Content-Length' => (string)strlen($content),
+            ]
+        );
+    }
+
+    /**
      * POST /api/v1/device/heartbeat
      */
     public function heartbeat(Request $req): Response

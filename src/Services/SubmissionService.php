@@ -125,6 +125,45 @@ final class SubmissionService
     }
 
     /**
+     * Device submit flag from check_task.php (no nonce required).
+     *
+     * POST /api/v1/device/submit-flag
+     */
+    public function submitFromDeviceNoNonce(
+        array $device,
+        int $taskSessionId,
+        string $submittedFlag,
+        ?Request $req = null,
+    ): array {
+        $task = $this->tasks->findById($taskSessionId);
+        if ($task === null) {
+            return $this->reject('task_not_found', 0);
+        }
+        if ((int)$task['student_id'] !== (int)$device['user_id']) {
+            return $this->reject('not_owner', 0);
+        }
+        if ($task['device_id'] !== null && (int)$task['device_id'] !== (int)$device['id']) {
+            return $this->reject('device_mismatch', 0);
+        }
+        $ip = $req?->ip();
+
+        return Connection::transaction(function () use ($task, $submittedFlag, $ip, $req, $device) {
+            $result = $this->verifyAndAward((int)$task['id'], (int)$task['challenge_id'], (int)$task['student_id'],
+                                             (string)$task['uuid'], $submittedFlag, $ip, $req, 'device',
+                                             (int)$device['id']);
+            if ($result['ok'] && $req !== null) {
+                AuditLog::fromRequest($req, 'task_complete', 'task', (string)$task['id'], [
+                    'device_id' => (int)$device['id'],
+                    'correct' => true,
+                    'points' => $result['points'],
+                ]);
+            }
+            $result['total_score'] = $this->solves->totalPointsForStudent((int)$task['student_id']);
+            return $result;
+        });
+    }
+
+    /**
      * Core: write submission, decide correct, optionally write solve, mark task.
      *
      * Returns:

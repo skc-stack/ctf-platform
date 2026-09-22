@@ -28,23 +28,30 @@ Target 安裝：
 
 ## 2. ZIP 格式
 
-最小：
+**重要：ZIP 結構必須為扁平（無子目錄）**
 
-```text
-challenge.zip
-└── manifest.json
-```
-
-Web 題：
-
+正確的結構：
 ```text
 challenge.zip
 ├── manifest.json
-├── web/
+├── index.php
 ├── setup.sql
-├── verifier/
-└── README.md
+├── README.md
+└── assets/（可選）
 ```
+
+錯誤的結構（不要使用）：
+```text
+challenge.zip
+└── CHALLENGE-ID/
+    ├── manifest.json
+    ├── web/
+    └── ...
+```
+
+ZIP 解壓後會直接展開到 `/srv/ctf/challenges/{challenge_id}/`，所有檔案必須在 ZIP 的根目錄层级。
+
+**entrypoint 會直接讀取 `{challenge_root}/{challenge_id}/index.php`**
 
 ---
 

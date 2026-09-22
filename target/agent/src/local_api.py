@@ -31,12 +31,9 @@ from .syncer import Syncer
 log = logging.getLogger("ctf-agent.local_api")
 
 
-def _write_dynamic_flag(challenge_id: str, flag: str) -> None:
+def _write_dynamic_flag(challenge_id: str, flag: str, challenge_root: str = "/srv/ctf/challenges") -> None:
     """Write the dynamic flag to the challenge directory for the entrypoint page to read."""
     try:
-        # Get the challenge root from config
-        db = LocalDBConfig.load_from_file()
-        challenge_root = db.config.get("challenge_root", "/srv/ctf/challenges")
         flag_file = Path(challenge_root) / challenge_id / ".current_flag"
         flag_file.parent.mkdir(parents=True, exist_ok=True)
         flag_file.write_text(flag + "\n")
@@ -144,9 +141,18 @@ def create_app(config: Optional[Config] = None,
             challenge_version = data.get("challenge_version")
 
             # Write the dynamic flag to the challenge directory
-            # so the entrypoint page can display it
-            if flag and challenge_id:
-                _write_dynamic_flag(challenge_id, flag)
+            # so the entrypoint page can display it.
+            # Use the slug from entrypoint (e.g. "/challenge/easy-web-001/")
+            # NOT the numeric database challenge_id, since the challenge
+            # directory on disk is named by slug, not by numeric ID.
+            challenge_slug = None
+            if entrypoint:
+                # entrypoint format: /challenge/{slug}/
+                parts = entrypoint.rstrip('/').split('/')
+                if len(parts) >= 3 and parts[1] == 'challenge':
+                    challenge_slug = parts[2]
+            if flag and challenge_slug:
+                _write_dynamic_flag(challenge_slug, flag, cfg.challenge_root)
 
             return jsonify({
                 "ok": True,
@@ -155,6 +161,41 @@ def create_app(config: Optional[Config] = None,
                 "entrypoint": entrypoint,
                 "challenge_version": challenge_version,
             })
+        except ServerAPIError as e:
+            return jsonify({"error": e.message}), e.status_code
+
+    # ---- /challenge-start -------------------------------------------------
+
+    @app.post("/challenge-start")
+    def challenge_start():
+        """Called by Portal when student enters a challenge page.
+        Forwards to Server to record cumulative solve time."""
+        c = _require_cred()
+        body = request.get_json(silent=True) or {}
+        task_id = body.get("task_id")
+        if not task_id:
+            return jsonify({"error": "task_id required"}), 400
+        try:
+            resp = ServerAPI(cfg, c).start_challenge(int(task_id))
+            return jsonify({"ok": True, "data": resp.body.get("data", {})})
+        except ServerAPIError as e:
+            return jsonify({"error": e.message}), e.status_code
+
+    # ---- /submit-flag ----------------------------------------------------
+
+    @app.post("/submit-flag")
+    def submit_flag():
+        """Called by check_task.php when student submits flag from challenge page.
+        Forwards to Server for validation and scoring."""
+        c = _require_cred()
+        body = request.get_json(silent=True) or {}
+        task_id = body.get("task_id")
+        flag = (body.get("flag") or "").strip()
+        if not task_id or not flag:
+            return jsonify({"error": "task_id and flag required"}), 400
+        try:
+            resp = ServerAPI(cfg, c).submit_flag(int(task_id), flag)
+            return jsonify(resp.body.get("data", resp.body))
         except ServerAPIError as e:
             return jsonify({"error": e.message}), e.status_code
 

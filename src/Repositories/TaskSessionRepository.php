@@ -18,6 +18,13 @@ final class TaskSessionRepository
     public const STATUS_EXPIRED   = 'expired';
     public const STATUS_CANCELLED = 'cancelled';
 
+    // Task progress status (displayed to student)
+    public const TASK_STATUS_NOT_COPIED   = 'token_not_copied';    // 還沒複製Task Token
+    public const TASK_STATUS_COPIED      = 'token_copied';         // 已複製Task Token
+    public const TASK_STATUS_VALIDATED   = 'token_validated';     // 已驗證Task Token
+    public const TASK_STATUS_STARTED     = 'challenge_started';    // 開始解題
+    public const TASK_STATUS_COMPLETED   = 'completed';            // 完成解題
+
     /** @return array<string,mixed>|null */
     public function findById(int $id): ?array
     {
@@ -63,15 +70,16 @@ final class TaskSessionRepository
         }
         Connection::run(
             'INSERT INTO task_sessions
-                (uuid, student_id, challenge_id, token_hash, status, expires_at)
+                (uuid, student_id, challenge_id, token_hash, status, task_status, expires_at)
              VALUES
-                (:u, :s, :c, :h, :st, :e)',
+                (:u, :s, :c, :h, :st, :ts, :e)',
             [
                 ':u'  => (string)$fields['uuid'],
                 ':s'  => (int)$fields['student_id'],
                 ':c'  => (int)$fields['challenge_id'],
                 ':h'  => (string)$fields['token_hash'],
                 ':st' => self::STATUS_ACTIVE,
+                ':ts' => self::TASK_STATUS_NOT_COPIED,
                 ':e'  => (string)$fields['expires_at'],
             ]
         );
@@ -103,9 +111,9 @@ final class TaskSessionRepository
     {
         $affected = Connection::run(
             'UPDATE task_sessions
-             SET status = :s, completed_at = NOW()
+             SET status = :s, task_status = :ts, completed_at = NOW()
              WHERE id = :id AND status = :active',
-            [':s' => self::STATUS_COMPLETED, ':id' => $taskId, ':active' => self::STATUS_ACTIVE]
+            [':s' => self::STATUS_COMPLETED, ':ts' => self::TASK_STATUS_COMPLETED, ':id' => $taskId, ':active' => self::STATUS_ACTIVE]
         )->rowCount();
         return $affected > 0;
     }
@@ -122,6 +130,28 @@ final class TaskSessionRepository
     }
 
     /**
+     * Update task progress status.
+     */
+    public function updateTaskStatus(int $taskId, string $status): bool
+    {
+        $allowed = [
+            self::TASK_STATUS_NOT_COPIED,
+            self::TASK_STATUS_COPIED,
+            self::TASK_STATUS_VALIDATED,
+            self::TASK_STATUS_STARTED,
+            self::TASK_STATUS_COMPLETED,
+        ];
+        if (!in_array($status, $allowed, true)) {
+            return false;
+        }
+        $affected = Connection::run(
+            'UPDATE task_sessions SET task_status = :ts WHERE id = :id AND status = :active',
+            [':ts' => $status, ':id' => $taskId, ':active' => self::STATUS_ACTIVE]
+        )->rowCount();
+        return $affected > 0;
+    }
+
+    /**
      * Mark all active+expired (past expires_at) tasks as expired.
      * Returns affected row count.
      */
@@ -132,6 +162,72 @@ final class TaskSessionRepository
              SET status = 'expired'
              WHERE status = 'active' AND expires_at < NOW()"
         )->rowCount();
+    }
+
+    /**
+     * Record that student has started solving the challenge.
+     * If a previous session exists (challenge_started_at is set), accumulate that time.
+     * Then set new challenge_started_at = NOW().
+     *
+     * @return array{challenge_time_seconds: int, challenge_started_at: string}|null
+     */
+    public function startChallenge(int $taskId): ?array
+    {
+        $task = $this->findById($taskId);
+        if ($task === null) {
+            return null;
+        }
+
+        $previousStartedAt = $task['challenge_started_at'] ?? null;
+        $existingTime = (int)($task['challenge_time_seconds'] ?? 0);
+        $newTotal = $existingTime;
+
+        if ($previousStartedAt !== null) {
+            // Accumulate previous session time
+            $elapsed = (int)((time() - strtotime($previousStartedAt)));
+            if ($elapsed > 0) {
+                $newTotal = $existingTime + $elapsed;
+            }
+        }
+
+        Connection::run(
+            'UPDATE task_sessions
+             SET challenge_time_seconds = :t, challenge_started_at = NOW()
+             WHERE id = :id AND status = :active',
+            [':t' => $newTotal, ':id' => $taskId, ':active' => self::STATUS_ACTIVE]
+        );
+
+        return [
+            'challenge_time_seconds' => $newTotal,
+            'challenge_started_at' => date('Y-m-d H:i:s'),
+        ];
+    }
+
+    /**
+     * Accumulate final time when student submits flag or ends challenge session.
+     * Clears challenge_started_at.
+     */
+    public function endChallengeSession(int $taskId): bool
+    {
+        $task = $this->findById($taskId);
+        if ($task === null) {
+            return false;
+        }
+
+        $previousStartedAt = $task['challenge_started_at'] ?? null;
+        if ($previousStartedAt !== null) {
+            $elapsed = (int)((time() - strtotime($previousStartedAt)));
+            $existingTime = (int)($task['challenge_time_seconds'] ?? 0);
+            Connection::run(
+                'UPDATE task_sessions
+                 SET challenge_time_seconds = challenge_time_seconds + :elapsed,
+                     challenge_started_at = NULL
+                 WHERE id = :id',
+                [':elapsed' => max(0, $elapsed), ':id' => $taskId]
+            );
+        }
+
+        return true;
     }
 
     /**

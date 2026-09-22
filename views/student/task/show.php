@@ -7,13 +7,25 @@ $taskId = (int)($task['id'] ?? 0);
 $expiresAt = $task['expires_at'] ?? '';
 $startedAt = $task['started_at'] ?? '';
 $status = $task['status'] ?? '';
+$taskStatus = $task['task_status'] ?? 'token_not_copied';
 $boundToDevice = !empty($task['device_id']);
 $expired = $expiresAt !== '' && strtotime($expiresAt) < time();
 $challengeTitle = $task['challenge_title'] ?? '未知題目';
 $challengeSlug = $task['challenge_slug'] ?? '';
-$challengeUuid = $task['challenge_uuid'] ?? '';
 $challengeVersion = (int)($task['challenge_version'] ?? 0);
 $entrypoint = '/challenge/' . ltrim($challengeSlug, '/') . '/';
+
+// Status mapping
+$statusLabels = [
+    'token_not_copied' => '還沒複製Task Token',
+    'token_copied' => '已複製Task Token',
+    'token_validated' => '已驗證Task Token',
+    'challenge_started' => '開始解題',
+    'completed' => '完成解題',
+];
+
+$currentStatusLabel = $statusLabels[$taskStatus] ?? '未知狀態';
+$isCompleted = $taskStatus === 'completed';
 ?>
 <section class="ctf-dash">
     <h1 class="ctf-dash-title">
@@ -24,21 +36,55 @@ $entrypoint = '/challenge/' . ltrim($challengeSlug, '/') . '/';
     </h1>
     <div class="ctf-dash-rule"></div>
 
-    <?php if ($task_token): ?>
-    <div class="ctf-flash ctf-flash-success" style="margin-bottom:1rem">
-        <i class="bi bi-check-circle-fill"></i> Task Token 已建立，請在 120 分鐘內貼到 Target Portal
+    <!-- 狀態追蹤面板 -->
+    <div class="task-status-panel" id="statusPanel" style="margin-bottom:1.5rem;padding:16px;border:1px solid var(--grid);background:#161b22">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+            <i class="bi bi-list-task" style="color:var(--brass)"></i>
+            <span style="font-weight:600;color:var(--paper)">解題進度</span>
+            <span class="ctf-badge" id="statusBadge" style="margin-left:auto;font-size:12px;padding:4px 10px;background:var(--brass);color:var(--ink);border-radius:4px">
+                <?= htmlspecialchars($currentStatusLabel, ENT_QUOTES, 'UTF-8') ?>
+            </span>
+        </div>
+        <div class="task-progress-steps" style="display:flex;flex-direction:column;gap:8px">
+            <div class="step <?= $taskStatus !== 'token_not_copied' ? 'done' : 'active' ?>" id="step1">
+                <span class="step-icon"><i class="bi bi-1-circle-fill"></i></span>
+                <span class="step-text">複製 Task Token</span>
+            </div>
+            <div class="step <?= in_array($taskStatus, ['token_copied','token_validated','challenge_started','completed']) ? 'done' : '' ?>" id="step2">
+                <span class="step-icon"><i class="bi bi-2-circle-fill"></i></span>
+                <span class="step-text">在 Target Portal 貼上 Token 驗證成功</span>
+            </div>
+            <div class="step <?= in_array($taskStatus, ['token_validated','challenge_started','completed']) ? 'done' : '' ?>" id="step3">
+                <span class="step-icon"><i class="bi bi-3-circle-fill"></i></span>
+                <span class="step-text">系統建立動態 Flag，開始解題</span>
+            </div>
+            <div class="step <?= $taskStatus === 'completed' ? 'done' : '' ?>" id="step4">
+                <span class="step-icon"><i class="bi bi-4-circle-fill"></i></span>
+                <span class="step-text">解題成功</span>
+            </div>
+        </div>
     </div>
+
+    <style>
+    .task-progress-steps .step { display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:6px;background:rgba(42,49,56,0.3);color:#8b969e;transition:all .3s }
+    .task-progress-steps .step.done { background:rgba(106,190,106,0.15);color:#6abe6a }
+    .task-progress-steps .step.active { background:rgba(191,111,58,0.15);color:#bf6f3a }
+    .task-progress-steps .step-icon { font-size:18px }
+    .task-progress-steps .step-text { font-size:14px }
+    </style>
+
+    <?php if ($task_token): ?>
     <div class="ctf-stat-card" style="margin-bottom:1rem;background:var(--ink);border:1px solid var(--grid);padding:16px">
         <div class="ctf-stat-label" style="display:flex;align-items:center;gap:8px">
-            <i class="bi bi-key"></i> 你的 Task Token（只會顯示一次）
-            <button type="button" class="ctf-btn ctf-btn-sm ctf-btn-ghost" onclick="
-                navigator.clipboard.writeText('<?= htmlspecialchars(addslashes($task_token), ENT_QUOTES, 'UTF-8') ?>').then(function(){
-                    var btn=this;btn.textContent='已複製!';setTimeout(function(){btn.textContent='複製';},2000);
-                }.bind(this)).catch(function(){});
-            ">複製</button>
+            <i class="bi bi-key"></i> 你的 Task Token
+            <button type="button" class="ctf-btn ctf-btn-sm ctf-btn-ghost" id="copyBtn"
+                onclick="copyToken()">複製</button>
         </div>
-        <div class="ctf-mono" style="font-size:20px;letter-spacing:3px;margin-top:8px;color:var(--drafting-cyan);word-break:break-all">
+        <div class="ctf-mono" id="tokenDisplay" style="font-size:18px;letter-spacing:2px;margin-top:8px;color:var(--drafting-cyan);word-break:break-all">
             <?= htmlspecialchars($task_token, ENT_QUOTES, 'UTF-8') ?>
+        </div>
+        <div id="copyFeedback" style="margin-top:8px;font-size:13px;color:#6abe6a;display:none">
+            <i class="bi bi-check-circle-fill"></i> 已複製！請貼到 Target Portal
         </div>
     </div>
     <?php else: ?>
@@ -66,9 +112,9 @@ $entrypoint = '/challenge/' . ltrim($challengeSlug, '/') . '/';
             <div class="ctf-stat-value ctf-stat-value-cyan">v<?= $challengeVersion ?></div>
         </div>
         <div class="ctf-stat-card">
-            <div class="ctf-stat-label"><i class="bi bi-link-45deg"></i> 挑戰入口</div>
-            <div class="ctf-mono" style="font-size:13px;padding-top:14px;color:var(--drafting-cyan)">
-                <code style="word-break:break-all"><?= htmlspecialchars($entrypoint, ENT_QUOTES, 'UTF-8') ?></code>
+            <div class="ctf-stat-label"><i class="bi bi-pc"></i> 靶場入口</div>
+            <div style="margin-top:10px;font-size:14px;color:#c8d3df">
+                進入靶場 Portal，輸入 Task Token 開始解題
             </div>
         </div>
     </div>
@@ -88,13 +134,13 @@ $entrypoint = '/challenge/' . ltrim($challengeSlug, '/') . '/';
             <div class="ctf-mono" style="font-size:16px;padding-top:14px"><?= htmlspecialchars($expiresAt, ENT_QUOTES, 'UTF-8') ?></div>
         </div>
         <div class="ctf-stat-card">
-            <div class="ctf-stat-label"><i class="bi bi-shield-check"></i> 狀態</div>
-            <div class="ctf-stat-value <?= $status === 'active' && !$expired ? 'ctf-stat-value-green' : 'ctf-stat-value-amber' ?>" style="font-size:20px;padding-top:18px">
+            <div class="ctf-stat-label"><i class="bi bi-shield-check"></i> 系統狀態</div>
+            <div class="ctf-stat-value <?= $status === 'active' && !$expired ? 'ctf-stat-value-green' : 'ctf-stat-value-amber' ?>" style="font-size:16px;padding-top:18px">
                 <?= $expired ? '已過期' : htmlspecialchars($status, ENT_QUOTES, 'UTF-8') ?>
             </div>
             <div class="ctf-stat-meta">
                 <?php if ($boundToDevice): ?>
-                    <i class="bi bi-link-45deg"></i> 已綁定裝置 #<?= (int)$task['device_id'] ?>
+                    <i class="bi bi-link-45deg"></i> 已綁定裝置
                 <?php else: ?>
                     <i class="bi bi-unlock"></i> 尚未綁定
                 <?php endif; ?>
@@ -102,27 +148,10 @@ $entrypoint = '/challenge/' . ltrim($challengeSlug, '/') . '/';
         </div>
     </div>
 
-    <div class="ctf-dash-meta">
-        <i class="bi bi-info-circle"></i> 啟用流程：到 Target Portal（通常是 <code>http://127.0.0.1:8080</code>）貼上 Token，Agent 會把 Token 送到 Server 驗證。
+    <?php if ($isCompleted): ?>
+    <div class="ctf-flash ctf-flash-success" style="margin-top:1rem">
+        <i class="bi bi-trophy-fill"></i> 恭喜！你已成功完成此挑戰！
     </div>
-
-    <?php if ($status === 'active' && !$expired): ?>
-    <h2 class="ctf-dash-sub">/ 繳交 Flag</h2>
-    <form action="/api/v1/student/submit" method="post" class="ctf-form">
-        <?= CSRF::field() ?>
-        <input type="hidden" name="task_id" value="<?= $taskId ?>">
-        <label class="ctf-field">
-            <span class="ctf-field-label">Flag（格式：<code>flag{...}</code>）</span>
-            <input type="text" name="flag" required placeholder="flag{32-char-hex}"
-                   pattern="flag\{[a-fA-F0-9]+\}"
-                   style="font-family:var(--font-mono);font-size:18px;letter-spacing:1px;">
-        </label>
-        <div class="ctf-form-actions">
-            <button type="submit" class="ctf-btn ctf-btn-primary">
-                <i class="bi bi-flag-fill"></i> 送出 Flag
-            </button>
-        </div>
-    </form>
     <?php endif; ?>
 
     <div class="ctf-dash-actions">
@@ -139,9 +168,88 @@ $entrypoint = '/challenge/' . ltrim($challengeSlug, '/') . '/';
             <i class="bi bi-arrow-left"></i> 回學生儀表板
         </a>
     </div>
-
-    <p class="ctf-dash-hint">
-        <i class="bi bi-shield-lock"></i> Token 只在啟動時顯示一次（已重導到這個頁面後就無法再看到明文）。
-        若遺失請重新啟動任務。
-    </p>
 </section>
+
+<script>
+const taskId = <?= $taskId ?>;
+const taskToken = <?= json_encode($task_token ?? '') ?>;
+
+// Copy token and update status
+async function copyToken() {
+    if (!taskToken) return;
+    try {
+        await navigator.clipboard.writeText(taskToken);
+        document.getElementById('copyFeedback').style.display = 'block';
+        // Update status to copied
+        const resp = await fetch(`/api/v1/student/task/${taskId}/status`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            body: JSON.stringify({ task_status: 'token_copied' })
+        });
+        if (resp.status === 401) {
+            alert('登入已過期，將導向首頁');
+            window.location.href = '/';
+            return;
+        }
+        updateProgressUI('token_copied');
+    } catch (e) {
+        alert('複製失敗：' + e);
+    }
+}
+
+// Update progress UI
+function updateProgressUI(status) {
+    const steps = {
+        'token_not_copied': 0,
+        'token_copied': 1,
+        'token_validated': 2,
+        'challenge_started': 2,
+        'completed': 3
+    };
+    const currentStep = steps[status] ?? 0;
+    const stepElements = ['step1','step2','step3','step4'];
+    stepElements.forEach((id, idx) => {
+        const el = document.getElementById(id);
+        if (idx < currentStep) {
+            el.className = 'step done';
+        } else if (idx === currentStep) {
+            el.className = 'step active';
+        } else {
+            el.className = 'step';
+        }
+    });
+    const badge = document.getElementById('statusBadge');
+    const labels = {
+        'token_not_copied': '還沒複製Task Token',
+        'token_copied': '已複製Task Token',
+        'token_validated': '在 Target Portal 貼上 Token 驗證成功',
+        'challenge_started': '系統建立動態 Flag，開始解題',
+        'completed': '解題成功'
+    };
+    badge.textContent = labels[status] || status;
+}
+
+// Poll for status updates
+async function pollStatus() {
+    try {
+        const resp = await fetch(`/api/v1/student/task/${taskId}/status`);
+        if (resp.status === 401) {
+            alert('登入已過期，將導向首頁');
+            window.location.href = '/';
+            return;
+        }
+        const data = await resp.json();
+        if (data.success) {
+            updateProgressUI(data.data.task_status);
+        } else if (data.error && data.error.toLowerCase().includes('unauthorized')) {
+            alert('登入已過期，將導向首頁');
+            window.location.href = '/';
+        }
+    } catch (e) {
+        console.error('Poll error:', e);
+    }
+}
+
+// Start polling every 5 seconds
+setInterval(pollStatus, 5000);
+</script>
