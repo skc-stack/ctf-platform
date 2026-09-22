@@ -112,9 +112,10 @@ function ctf_web_routes(Router $router): void
     $router->post('/api/v1/student/task/start', [Auth::class, RequireStudent::class, CSRF::class], [TaskController::class, 'start']);
     $router->post('/api/v1/student/submit', [Auth::class, RequireStudent::class, CSRF::class, RateLimitFlagSubmit::class], [SubmissionController::class, 'submitFromBrowser']);
 
-    // Device: task validate + complete
+    // Device: task validate + complete + submit-flag (no nonce)
     $router->post('/api/v1/device/task/validate', [DeviceAuth::class, RateLimitTaskValidate::class], [TaskController::class, 'validateApi']);
     $router->post('/api/v1/device/task/complete', [DeviceAuth::class, RateLimitFlagSubmit::class], [SubmissionController::class, 'completeFromDevice']);
+    $router->post('/api/v1/device/submit-flag', [DeviceAuth::class, RateLimitFlagSubmit::class], [SubmissionController::class, 'submitFlagFromDevice']);
 
     // Leaderboard (public — but visible to anyone)
     $router->get('/leaderboard', [], [HomeController::class, 'leaderboard']);

@@ -124,6 +124,43 @@ final class SubmissionService
     }
 
     /**
+     * Device flag submission without nonce (for check_task.php flow).
+     * No replay protection — the device is trusted via DeviceAuth middleware.
+     */
+    public function submitFromDeviceNoNonce(
+        array $device,
+        int $taskSessionId,
+        string $submittedFlag,
+        ?Request $req = null,
+    ): array {
+        $task = $this->tasks->findById($taskSessionId);
+        if ($task === null) {
+            return $this->reject('task_not_found', 0);
+        }
+        // Allow cross-student on shared VM (same as completeFromDevice).
+        // Make sure this task is bound to the calling device.
+        if ($task['device_id'] !== null && (int)$task['device_id'] !== (int)$device['id']) {
+            return $this->reject('device_mismatch', 0);
+        }
+        $ip = $req?->ip();
+
+        return Connection::transaction(function () use ($task, $submittedFlag, $ip, $req, $device) {
+            $result = $this->verifyAndAward((int)$task['id'], (int)$task['challenge_id'], (int)$task['student_id'],
+                                             (string)$task['uuid'], $submittedFlag, $ip, $req, 'device_nonceless',
+                                             (int)$device['id']);
+            if ($result['ok'] && $req !== null) {
+                AuditLog::fromRequest($req, 'flag_submit_device', 'task', (string)$task['id'], [
+                    'device_id' => (int)$device['id'],
+                    'correct' => true,
+                    'points' => $result['points'],
+                ]);
+            }
+            $result['total_score'] = $this->solves->totalPointsForStudent((int)$task['student_id']);
+            return $result;
+        });
+    }
+
+    /**
      * Core: write submission, decide correct, optionally write solve, mark task.
      *
      * Returns:

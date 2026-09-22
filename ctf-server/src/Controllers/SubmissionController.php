@@ -76,4 +76,38 @@ final class SubmissionController extends BaseController
             'new_solve' => $result['new_solve'],
         ], $http);
     }
+
+    /**
+     * Device flag submission without nonce — used by check_task.php on Target VM.
+     * No nonce required because the device is already authenticated via Bearer token.
+     */
+    public function submitFlagFromDevice(Request $req): Response
+    {
+        $device = $req->device ?? null;
+        if ($device === null) {
+            return $this->jsonError('Device not authenticated', 401);
+        }
+        $payload = $req->isJson() ? $req->json() : $req->post;
+        $taskId = (int)($payload['task_id'] ?? 0);
+        $flag = (string)($payload['flag'] ?? '');
+        if ($taskId === 0 || $flag === '') {
+            return $this->jsonError('Missing required fields: task_id, flag', 400);
+        }
+        $result = $this->service->submitFromDeviceNoNonce($device, $taskId, $flag, $req);
+        $http = 200;
+        if (!$result['ok']) {
+            $http = match ($result['reason']) {
+                'task_not_found' => 404,
+                'device_mismatch' => 403,
+                default => 400,
+            };
+        }
+        return $this->jsonOk([
+            'correct' => $result['ok'],
+            'reason' => $result['reason'],
+            'points_awarded' => $result['points'],
+            'total_score' => $result['total_score'],
+            'new_solve' => $result['new_solve'],
+        ], $http);
+    }
 }
