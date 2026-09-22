@@ -52,23 +52,25 @@ final class Router
                 continue;
             }
             // Convert /task/{id} to a regex with a capture group.
-            // First pass: extract parameter names
             $paramNames = [];
-            $rpath2 = $rpath;
-            if (preg_match_all('#\{([a-zA-Z_]+)\}#', $rpath, $matches)) {
-                $paramNames = $matches[1];
-            }
-            $regex = '#^' . preg_replace('#\{([a-zA-Z_]+)\}#', '([^/]+)', $rpath) . '/?$#';
+            $pattern = preg_replace('#\{([a-zA-Z_]+)\}#', function($m) use (&$paramNames) {
+                $paramNames[] = $m[1];
+                return '([^/]+)';
+            }, $rpath);
+            $regex = '#^' . $pattern . '/?$#';
             if (!preg_match($regex, $path, $m)) {
                 continue;
             }
-            array_shift($m);
+            // $m[0] = full match, $m[1], $m[2]... = captured groups
             // Map captured values to parameter names
             $params = [];
             foreach ($paramNames as $i => $name) {
-                $params[$name] = $m[$i] ?? null;
+                $params[$name] = $m[$i + 1] ?? null;
             }
+            // Also set route_params as indexed array (for legacy code that uses $req['route_params'][0])
+            $routeParams = array_values($params);
             $req['params'] = $params;
+            $req['route_params'] = $routeParams;
 
             // Run middleware in reverse.
             $pipeline = array_reverse($middleware);
