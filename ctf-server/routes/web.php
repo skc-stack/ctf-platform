@@ -7,6 +7,8 @@ use CTF\Server\Controllers\AuthController;
 use CTF\Server\Controllers\CaptchaController;
 use CTF\Server\Controllers\Student\DashboardController as StudentDashboard;
 use CTF\Server\Controllers\Student\GroupController as StudentGroups;
+use CTF\Server\Controllers\Student\DeviceController as StudentDevice;
+use CTF\Server\Controllers\Student\ChallengeController as StudentChallenges;
 use CTF\Server\Controllers\SubmissionController;
 use CTF\Server\Controllers\TaskController;
 use CTF\Server\Controllers\Teacher\DashboardController as TeacherDashboard;
@@ -14,6 +16,7 @@ use CTF\Server\Controllers\Teacher\GroupController as TeacherGroups;
 use CTF\Server\Controllers\Teacher\ChallengeController as TeacherChallenges;
 use CTF\Server\Controllers\Admin\DashboardController as AdminDashboard;
 use CTF\Server\Controllers\Admin\UserApprovalController;
+use CTF\Server\Controllers\Admin\DeviceController as AdminDeviceController;
 use CTF\Server\Controllers\DeviceController;
 use CTF\Server\Controllers\DeviceApiController;
 use CTF\Server\Middleware\Guest;
@@ -64,6 +67,11 @@ function ctf_web_routes(Router $router): void
     $router->post('/admin/users/{id}/approve', [Auth::class, RequireAdmin::class, CSRF::class], [UserApprovalController::class, 'approve']);
     $router->post('/admin/users/{id}/disable', [Auth::class, RequireAdmin::class, CSRF::class], [UserApprovalController::class, 'disable']);
 
+    // Admin: devices
+    $router->get('/admin/devices', [Auth::class, RequireAdmin::class], [AdminDeviceController::class, 'index']);
+    $router->post('/admin/devices/{id}/revoke', [Auth::class, RequireAdmin::class, CSRF::class], [AdminDeviceController::class, 'revoke']);
+    $router->post('/admin/devices/codes/{id}', [Auth::class, RequireAdmin::class, CSRF::class], [AdminDeviceController::class, 'deleteActivationCode']);
+
     // Teacher: groups
     $router->get('/teacher/groups', [Auth::class, RequireTeacher::class], [TeacherGroups::class, 'index']);
     $router->get('/teacher/groups/new', [Auth::class, RequireTeacher::class], [TeacherGroups::class, 'new']);
@@ -94,17 +102,31 @@ function ctf_web_routes(Router $router): void
     $router->post('/student/groups/join', [Auth::class, RequireStudent::class, CSRF::class], [StudentGroups::class, 'join']);
     $router->post('/student/groups/{id}/leave', [Auth::class, RequireStudent::class, CSRF::class], [StudentGroups::class, 'leave']);
 
+    // Student: devices
+    $router->get('/student/devices', [Auth::class, RequireStudent::class], [StudentDevice::class, 'index']);
+    $router->post('/api/v1/student/devices/request-code', [Auth::class, RequireStudent::class], [StudentDevice::class, 'requestCode']);
+    $router->post('/api/v1/student/devices/revoke/{id}', [Auth::class, RequireStudent::class, CSRF::class], [StudentDevice::class, 'revoke']);
+
+    // Student: challenges
+    $router->get('/student/challenges', [Auth::class, RequireStudent::class], [StudentChallenges::class, 'index']);
+    $router->get('/student/challenges/{id}', [Auth::class, RequireStudent::class], [StudentChallenges::class, 'show']);
+
     // Student: tasks
     $router->get('/student/task/{id}', [Auth::class, RequireStudent::class], [TaskController::class, 'show']);
     $router->post('/student/task/{id}/cancel', [Auth::class, RequireStudent::class, CSRF::class], [TaskController::class, 'cancel']);
     $router->post('/api/v1/student/task/start', [Auth::class, RequireStudent::class, CSRF::class], [TaskController::class, 'start']);
+    $router->get('/api/v1/student/task/{id}/status', [Auth::class, RequireStudent::class], [TaskController::class, 'statusApi']);
+    $router->post('/api/v1/student/task/{id}/status', [Auth::class, RequireStudent::class], [TaskController::class, 'updateStatusApi']);
     $router->post('/api/v1/student/submit', [Auth::class, RequireStudent::class, CSRF::class, RateLimitFlagSubmit::class], [SubmissionController::class, 'submitFromBrowser']);
 
-    // Device: task validate + complete
+    // Device: task validate + complete + submit-flag (no nonce)
     $router->post('/api/v1/device/task/validate', [DeviceAuth::class, RateLimitTaskValidate::class], [TaskController::class, 'validateApi']);
     $router->post('/api/v1/device/task/complete', [DeviceAuth::class, RateLimitFlagSubmit::class], [SubmissionController::class, 'completeFromDevice']);
+    $router->post('/api/v1/device/submit-flag', [DeviceAuth::class, RateLimitFlagSubmit::class], [SubmissionController::class, 'submitFlagFromDevice']);
+    $router->post('/api/v1/device/challenge/start', [DeviceAuth::class], [TaskController::class, 'startChallengeApi']);
+    $router->get('/api/v1/device/task/{id}/flag', [DeviceAuth::class], [TaskController::class, 'getFlagApi']);
 
-    // Task: get flag for completed challenge (called from challenge page via browser)
+    // Task: get flag for completed challenge
     $router->get('/api/v1/task/flag', [Auth::class, RequireStudent::class, RateLimitFlagSubmit::class], [TaskController::class, 'getFlagApi']);
 
     // Leaderboard (public — but visible to anyone)
@@ -117,4 +139,6 @@ function ctf_web_routes(Router $router): void
     $router->post('/api/v1/device/activate', [], [DeviceApiController::class, 'activate']);
     $router->get('/api/v1/device/info', [DeviceAuth::class], [DeviceController::class, 'info']);
     $router->post('/api/v1/device/heartbeat', [DeviceAuth::class], [DeviceController::class, 'heartbeat']);
+    // Teacher: CKEditor image upload
+    $router->post('/api/v1/teacher/upload-image', [Auth::class, RequireTeacher::class], [TeacherChallenges::class, 'uploadImage']);
 }

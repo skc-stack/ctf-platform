@@ -208,7 +208,15 @@ final class TaskController extends BaseController
      */
     public function getFlagApi(Request $req): Response
     {
-        $studentId = (int)$_SESSION['user']['id'];
+        // Support both browser session auth and device auth
+        $device = $req->device ?? null;
+        if ($device !== null) {
+            // Device call - use device's user_id
+            $studentId = (int)$device['user_id'];
+        } else {
+            // Browser call - use session
+            $studentId = (int)($_SESSION['user']['id'] ?? 0);
+        }
         $taskId = (int)($req->get['task_id'] ?? 0);
         $challengeSlug = trim((string)($req->get['challenge_slug'] ?? ''));
 

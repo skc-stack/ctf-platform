@@ -148,63 +148,78 @@ final class PortalController
         ];
     }
 
-    /* ===== Challenge Entry ===== */
+    /* ===== Get Flag ===== */
 
     /**
-     * Start a challenge - validates task and redirects to challenge
+     * POST /getflag
+     * Called by challenge PHP when check() returns true.
+     * Proxies to Agent which calls Server for the dynamic flag.
+     */
+    public function doGetFlag(array $req): array
+    {
+        $taskId = (int)($req['post']['task_id'] ?? 0);
+        $challengeSlug = trim((string)($req['post']['challenge_slug'] ?? ''));
+
+        if ($taskId === 0 || $challengeSlug === '') {
+            return [
+                'status' => 400,
+                'headers' => ['Content-Type' => 'application/json'],
+                'body' => json_encode(['error' => 'task_id and challenge_slug required']),
+            ];
+        }
+
+        $result = $this->agent->post('/getflag', [
+            'task_id' => $taskId,
+            'challenge_slug' => $challengeSlug,
+        ]);
+
+        if ($result['ok']) {
+            return [
+                'status' => 200,
+                'headers' => ['Content-Type' => 'application/json'],
+                'body' => json_encode(['flag' => $result['body']['flag'] ?? '']),
+            ];
+        }
+
+        return [
+            'status' => $result['status'] ?: 500,
+            'headers' => ['Content-Type' => 'application/json'],
+            'body' => json_encode(['error' => $result['error'] ?? 'Failed to get flag']),
+        ];
+    }
+
+    /* ===== Challenge Start ===== */
+
+    /**
+     * GET /challenge/start/{slug}?task_id=XXX
+     *
+     * Called when student enters a challenge. Records start time via Server API,
+     * then redirects to the actual challenge page.
      */
     public function challengeStart(array $req): array
     {
-        $slug = $req['params']['slug'] ?? '';
+        $slug = $req['route_params'][0] ?? '';
+        $taskId = (int)($req['query']['task_id'] ?? 0);
 
-        if ($slug === '') {
+        if ($slug === '' || $taskId === 0) {
             return [
                 'status' => 302,
-                'headers' => ['Location' => '/', 'Content-Type' => 'text/html; charset=utf-8'],
+                'headers' => ['Location' => '/task', 'Content-Type' => 'text/html; charset=utf-8'],
                 'body' => '',
             ];
         }
 
-        // Support both 'token' and 'task_id' parameters
-        $taskToken = $_GET['token'] ?? $_POST['token'] ?? '';
-        $taskId = $_GET['task_id'] ?? $_POST['task_id'] ?? '';
+        // Tell the server the student has started the challenge
+        // (accumulates time if returning)
+        $this->agent->post('/challenge-start', ['task_id' => $taskId]);
 
-        if ($taskId !== '') {
-            // task_id provided - notify CTF Server that challenge was started
-            // This calls the Server's API to record the start time
-            $serverUrl = getenv('CTF_SERVER_URL') ?: 'http://ctf-server';
-            $apiUrl = rtrim($serverUrl, '/') . '/api/v1/device/challenge/start';
-
-            $context = stream_context_create([
-                'http' => [
-                    'method' => 'POST',
-                    'header' => "Content-Type: application/json\r\n",
-                    'content' => json_encode(['task_id' => (int)$taskId]),
-                    'timeout' => 5,
-                    'ignore_errors' => true,
-                ]
-            ]);
-
-            $response = @file_get_contents($apiUrl, false, $context);
-            // Even if Server doesn't respond, allow student to enter challenge
-        }
-
-        if ($taskToken !== '') {
-            // Verify task token with Agent (for traditional token-based flow)
-            $result = $this->agent->post('/task', ['task_token' => $taskToken]);
-            if (!$result['ok']) {
-                return Router::render('error', [
-                    'title' => '錯誤',
-                    'message' => $result['error'] ?? 'Task Token 無效或已過期',
-                ], 403);
-            }
-        }
-
-        // Redirect to challenge entry point
+        // Redirect to the actual challenge directory
+        // Use /enter/ prefix so Apache doesn't intercept it as a static directory
+        // Pass task_id as query param so challenge PHP can use it for getflag()
         return [
             'status' => 302,
             'headers' => [
-                'Location' => "/enter/{$slug}",
+                'Location' => '/enter/' . $slug . '/?task_id=' . $taskId,
                 'Content-Type' => 'text/html; charset=utf-8',
             ],
             'body' => '',
@@ -212,88 +227,37 @@ final class PortalController
     }
 
     /**
-     * Serve challenge files (index.php, check.php, etc.)
+     * GET /enter/{slug}
+     * Serve the challenge's index.php from the challenge directory.
      */
     public function serveChallenge(array $req): array
     {
-        $slug = $req['params']['slug'] ?? '';
-        $file = $req['params']['file'] ?? 'index.php';
+        $slug = $req['route_params'][0] ?? '';
+        $challengePath = '/srv/ctf/challenges/' . $slug;
+        $indexFile = $challengePath . '/index.php';
 
-        if ($slug === '') {
+        if (!is_file($indexFile)) {
             return [
-                'status' => 302,
-                'headers' => ['Location' => '/', 'Content-Type' => 'text/html; charset=utf-8'],
-                'body' => '',
+                'status' => 404,
+                'headers' => ['Content-Type' => 'text/html; charset=utf-8'],
+                'body' => '<h1>404 - Challenge not found</h1>',
             ];
         }
 
-        // Security: prevent path traversal
-        $slug = preg_replace('/[^a-zA-Z0-9_-]/', '', $slug);
-        $file = basename($file); // Only allow filename, no path
-
-        // Challenge directory
-        $challengeRoot = '/srv/ctf/challenges';
-        $challengePath = "{$challengeRoot}/{$slug}";
-
-        // Check if challenge exists
-        if (!is_dir($challengePath)) {
-            return Router::render('error', [
-                'title' => '找不到題目',
-                'message' => "題目 {$slug} 不存在",
-            ], 404);
-        }
-
-        // Build the file path
-        $filePath = "{$challengePath}/{$file}";
-
-        // Security: ensure file is within challenge directory (no traversal)
-        $realPath = realpath($challengePath);
-        $realFilePath = realpath($filePath);
-        if ($realFilePath === false || strpos($realFilePath, $realPath) !== 0) {
-            return Router::render('error', [
-                'title' => '拒絕存取',
-                'message' => '無效的檔案路徑',
-            ], 403);
-        }
-
-        // Check if file exists
-        if (!is_file($realFilePath)) {
-            return Router::render('error', [
-                'title' => '找不到檔案',
-                'message' => "檔案 {$file} 不存在",
-            ], 404);
-        }
-
-        // Include and execute the challenge file
-        // Capture output from the included file
+        // Include and execute the challenge's index.php
+        // The challenge's PHP can access $slug via $_GET['slug']
+        chdir($challengePath);
         ob_start();
         try {
-            include $realFilePath;
-            $output = ob_get_clean();
+            include $indexFile;
+            $body = ob_get_clean();
         } catch (\Throwable $e) {
-            ob_end_clean();
-            return Router::render('error', [
-                'title' => '執行錯誤',
-                'message' => '題目執行時發生錯誤',
-            ], 500);
+            $body = '<h1>Error loading challenge</h1><pre>' . htmlspecialchars($e->getMessage()) . '</pre>';
         }
-
-        // Inject base tag to fix relative URLs
-        // This ensures links like "check.php" resolve to "/enter/{slug}/check.php"
-        $baseTag = '<base href="/enter/' . htmlspecialchars($slug, ENT_QUOTES, 'UTF-8') . '/">';
-        if (stripos($output, '<head') !== false) {
-            $output = preg_replace('/<head(.*?)>/i', '<head$1>' . $baseTag, $output, 1);
-        } else {
-            $output = $baseTag . $output;
-        }
-
-        // Return the challenge output
         return [
             'status' => 200,
-            'headers' => [
-                'Content-Type' => 'text/html; charset=utf-8',
-            ],
-            'body' => $output,
+            'headers' => ['Content-Type' => 'text/html; charset=utf-8'],
+            'body' => $body,
         ];
     }
 

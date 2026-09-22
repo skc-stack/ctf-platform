@@ -10,6 +10,7 @@ declare(strict_types=1);
  *   3. Emit headers + body.
  *
  * Security:
+ *   - The Portal binds only to 127.0.0.1 (set in Apache vhost).
  *   - Apache config disables shell_exec/system/exec/etc. via php.ini.
  *   - This file should never call any of those functions; grep guards
  *     in tests enforce it.
@@ -23,7 +24,13 @@ require __DIR__ . '/../src/PortalController.php';
 use CTF\Portal\Router;
 use CTF\Portal\PortalController;
 
+// Reject any non-loopback requests (defense in depth; Apache should also enforce).
 $remote = $_SERVER['REMOTE_ADDR'] ?? '';
+if (!in_array($remote, ['127.0.0.1', '::1'], true)) {
+    http_response_code(403);
+    echo 'Forbidden — Portal only accepts loopback connections.';
+    exit;
+}
 
 $req = [
     'method' => strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET'),
@@ -35,7 +42,7 @@ $req = [
 
 $router = new Router();
 
-// Public routes — no auth.
+// Public routes — no auth (Portal binds to 127.0.0.1 only).
 $router->get('/', [], [PortalController::class, 'home']);
 $router->get('/activate', [], [PortalController::class, 'showActivate']);
 $router->post('/activate', [], [PortalController::class, 'doActivate']);
@@ -43,12 +50,11 @@ $router->post('/sync', [], [PortalController::class, 'doSync']);
 $router->get('/task', [], [PortalController::class, 'showTask']);
 $router->post('/task', [], [PortalController::class, 'doTask']);
 $router->post('/reset', [], [PortalController::class, 'doReset']);
+$router->post('/getflag', [], [PortalController::class, 'doGetFlag']);
 // Challenge entrypoint — record start time then redirect to challenge
 $router->get('/challenge/start/{slug}', [], [PortalController::class, 'challengeStart']);
-// Serve challenge page (after redirect from challengeStart) - optional file path
+// Serve challenge page (after redirect from challengeStart)
 $router->get('/enter/{slug}', [], [PortalController::class, 'serveChallenge']);
-$router->get('/enter/{slug}/{file}', [], [PortalController::class, 'serveChallenge']);
-$router->post('/enter/{slug}/{file}', [], [PortalController::class, 'serveChallenge']);
 
 $result = $router->dispatch($req);
 

@@ -20,27 +20,43 @@ ini_set('display_errors', 0);
  */
 function getflag(): string
 {
-    // 嘗試從 Portal 取得 flag
+    // 挑戰目錄名稱當作 challenge_slug
+    $challengeSlug = basename(__DIR__);
+
+    // 從 URL query parameter 取得 task_id
+    // Portal 會在 redirect 時傳入 ?task_id=XXX
+    $taskId = isset($_GET['task_id']) ? (int)$_GET['task_id'] : 0;
+
+    if ($taskId === 0) {
+        return 'CTF{FLAG_NO_TASK_ID}';
+    }
+
+    // 透過 Portal -> Agent -> Server 取得 flag
     $port = getenv('CTF_PORTAL_PORT') ?: '80';
-    $portal_url = "http://127.0.0.1:{$port}/api/flag";
+    $portalUrl = "http://127.0.0.1:{$port}/getflag";
 
     $context = stream_context_create([
         'http' => [
             'method' => 'POST',
             'header' => "Content-Type: application/json\r\n",
             'content' => json_encode([
-                'challenge_id' => basename(__DIR__),
-                'student_id' => $_SESSION['student_id'] ?? 'anonymous',
+                'task_id' => $taskId,
+                'challenge_slug' => $challengeSlug,
             ]),
-            'timeout' => 5,
+            'timeout' => 10,
             'ignore_errors' => true,
         ]
     ]);
 
-    $response = @file_get_contents($portal_url, false, $context);
+    $response = @file_get_contents($portalUrl, false, $context);
     if ($response !== false) {
         $data = json_decode($response, true);
-        return $data['flag'] ?? 'CTF{FLAG_ERROR}';
+        if (isset($data['flag']) && $data['flag'] !== '') {
+            return $data['flag'];
+        }
+        if (isset($data['error'])) {
+            return 'CTF{FLAG_ERROR: ' . $data['error'] . '}';
+        }
     }
 
     return 'CTF{FLAG_UNAVAILABLE}';
