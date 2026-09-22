@@ -187,4 +187,73 @@ final class TaskController extends BaseController
         }
         return $this->jsonOk(['task_status' => $newStatus]);
     }
+
+    /**
+     * GET /api/v1/task/flag
+     * Get flag for a completed challenge.
+     *
+     * Called by Target VM's getflag() after check() returns true.
+     *
+     * Query params:
+     *   - task_id: int (required)
+     *   - challenge_slug: string (required)
+     *
+     * Returns: { flag: string }
+     *
+     * Security:
+     *   - Task must belong to the student making the request
+     *   - Task must be in 'active' status and not expired
+     *   - This endpoint does NOT mark the task as completed
+     *     (flag submission is a separate flow)
+     */
+    public function getFlagApi(Request $req): Response
+    {
+        $studentId = (int)$_SESSION['user']['id'];
+        $taskId = (int)($req->get['task_id'] ?? 0);
+        $challengeSlug = trim((string)($req->get['challenge_slug'] ?? ''));
+
+        if ($taskId === 0 || $challengeSlug === '') {
+            return $this->jsonError('task_id and challenge_slug are required', 400);
+        }
+
+        // Get task and verify it belongs to this student
+        $task = $this->tasks->findById($taskId);
+        if (!$task) {
+            return $this->jsonError('Task not found', 404);
+        }
+        if ((int)$task['student_id'] !== $studentId) {
+            return $this->jsonError('Unauthorized', 403);
+        }
+
+        // Verify task is active
+        if ($task['status'] !== 'active') {
+            return $this->jsonError('Task is not active', 400);
+        }
+
+        // Verify task hasn't expired
+        if (strtotime($task['expires_at']) < time()) {
+            return $this->jsonError('Task has expired', 400);
+        }
+
+        // Get challenge to verify slug matches
+        $challenge = \CTF\Server\Database\Connection::fetchOne(
+            'SELECT id, uuid, slug FROM challenges WHERE slug = :slug',
+            [':slug' => $challengeSlug]
+        );
+        if (!$challenge) {
+            return $this->jsonError('Challenge not found', 404);
+        }
+        if ((int)$task['challenge_id'] !== (int)$challenge['id']) {
+            return $this->jsonError('Challenge mismatch', 400);
+        }
+
+        // Generate and return the flag
+        $flag = \CTF\Server\Security\FlagGenerator::compute(
+            $studentId,
+            (string)$challenge['uuid'],
+            (string)$task['uuid']
+        );
+
+        return $this->jsonOk(['flag' => $flag]);
+    }
 }
